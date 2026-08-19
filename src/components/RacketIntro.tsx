@@ -1,0 +1,250 @@
+"use client";
+
+import { useEffect, useRef, useState } from "react";
+import RacketCanvas from "./RacketCanvas";
+
+// WIP staging area for the racket-rotates-into-a-project-carousel scene
+// being built in stages. Three acts share the pinned scroll budget, the same
+// way AboutCourt splits its own budget with FLIP_START: the court is empty
+// at first, the racket (real 3D model) falls in, rotates 90° from vertical
+// to horizontal, then a tennis ball falls in and settles at center — ready
+// for a later phase to turn it into the project carousel.
+//
+// The court background is a one-point-perspective grass court as seen from
+// a player standing just behind the near baseline (not the aerial angle of
+// a broadcast shot) — mowing stripes and lines converge toward a horizon
+// vanishing point, computed with a simple focal-depth projection rather
+// than eyeballed, so the perspective actually reads as consistent. The
+// stand behind and beside the court nods to Wimbledon Centre Court
+// specifically (the triangular roof truss, tiered seating wrapping the
+// court on both sides) but stays in the site's dark palette rather than
+// switching to the bright daylight of a real photo — this section is styled
+// as a night match under lights, matching the mood of the Hero/About
+// sections rather than clashing with them.
+const PIN_HEIGHT_VH = 400;
+const FALL_END = 1 / 3;
+const ROTATE_END = 2 / 3;
+const VIEW_H = 1050;
+
+// The court/apron trapezoid — near corners at the bottom edge, far corners
+// up at the back-of-stand line (y=406). Everything inside this shape is
+// grass; everything outside it (down to the horizon at y=260) is stand.
+// Used both to fill the grass and, via evenodd, to cut the grass shape out
+// of the stand so the stand actually wraps down the sides of the court
+// instead of grass running off to the frame edges.
+const COURT_NEAR_L = 141.8;
+const COURT_NEAR_R = 1458.2;
+const COURT_FAR_L = 649.6;
+const COURT_FAR_R = 950.4;
+const courtPath = `M${COURT_FAR_L},406 L${COURT_FAR_R},406 L${COURT_NEAR_R},${VIEW_H} L${COURT_NEAR_L},${VIEW_H} Z`;
+
+export default function RacketIntro() {
+  const wrapperRef = useRef<HTMLDivElement>(null);
+  const [reduceMotion, setReduceMotion] = useState(false);
+  const [fallProgress, setFallProgress] = useState(0);
+  const [rotateProgress, setRotateProgress] = useState(0);
+  const [ballProgress, setBallProgress] = useState(0);
+
+  useEffect(() => {
+    const mql = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const applyReducedMotion = (matches: boolean) => {
+      if (!matches) return;
+      setReduceMotion(true);
+      setFallProgress(1);
+      setRotateProgress(1);
+      setBallProgress(1);
+    };
+    applyReducedMotion(mql.matches);
+    const onChange = (e: MediaQueryListEvent) => applyReducedMotion(e.matches);
+    mql.addEventListener("change", onChange);
+    return () => mql.removeEventListener("change", onChange);
+  }, []);
+
+  useEffect(() => {
+    const wrapper = wrapperRef.current;
+    if (!wrapper || reduceMotion) return;
+
+    let raf = 0;
+    const update = () => {
+      raf = 0;
+      const rect = wrapper.getBoundingClientRect();
+      const vh = window.innerHeight;
+      const scrollable = rect.height - vh;
+      const p = scrollable > 0 ? Math.min(1, Math.max(0, -rect.top / scrollable)) : 1;
+      setFallProgress(Math.min(1, p / FALL_END));
+      setRotateProgress(Math.max(0, Math.min(1, (p - FALL_END) / (ROTATE_END - FALL_END))));
+      setBallProgress(Math.max(0, Math.min(1, (p - ROTATE_END) / (1 - ROTATE_END))));
+    };
+
+    const onScroll = () => {
+      if (raf) return;
+      raf = requestAnimationFrame(update);
+    };
+
+    update();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+      if (raf) cancelAnimationFrame(raf);
+    };
+  }, [reduceMotion]);
+
+  return (
+    <div ref={wrapperRef} className="relative" style={{ height: `${PIN_HEIGHT_VH}vh` }}>
+      <section className="sticky top-0 h-screen min-h-[640px] w-full overflow-hidden bg-background">
+        <svg
+          aria-hidden
+          className="pointer-events-none absolute inset-0 h-full w-full"
+          viewBox={`0 0 1600 ${VIEW_H}`}
+          // xMidYMax (not YMid): anchors the bottom edge of the artwork to
+          // the bottom of the frame, so a wide/short browser window always
+          // crops into the sky at the top first — never into the baseline,
+          // regardless of how extreme the aspect ratio gets. Padding the
+          // viewBox and centering (the previous approach) only worked up to
+          // whatever aspect ratio the padding happened to cover.
+          preserveAspectRatio="xMidYMax slice"
+        >
+          <defs>
+            {/* gradientUnits="userSpaceOnUse" with fixed coordinates (not
+                the default objectBoundingBox) is what makes this ONE
+                continuous gradient shared across every element that
+                references it. Left as the default, each small tier rect
+                below would get its own independent 0%-100% cycle of the
+                gradient sized to *its own* bounding box — visible as a
+                seam/band at every tier boundary, where one tier's cycle
+                ends light and the next one's begins dark again. */}
+            <linearGradient id="racket-sky" x1="0" y1="0" x2="0" y2={VIEW_H} gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stopColor="#050704" />
+              <stop offset="100%" stopColor="#111a10" />
+            </linearGradient>
+            {/* One continuous haze fade for the stand (far/top = hazier,
+                near/bottom = clearer) — a single gradient rather than
+                several stepped rects at different opacities, since even a
+                smooth opacity *step* between two rects reads as a faint
+                seam. This can't band because there's no boundary to band
+                at. */}
+            <linearGradient id="racket-haze" x1="0" y1="110" x2="0" y2="985" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stopColor="#050704" stopOpacity="0.6" />
+              <stop offset="100%" stopColor="#050704" stopOpacity="0" />
+            </linearGradient>
+            {/* Tiered seating: faint row lines plus a scatter of
+                muted green dots (the crowd, deliberately abstract/blurry —
+                that's how a stand actually reads from this distance) with a
+                couple of warmer, lighter dots mixed in for variety, plus one
+                small signage-colored accent. */}
+            <pattern id="racket-crowd" width="46" height="22" patternUnits="userSpaceOnUse">
+              <rect width="46" height="22" fill="#0e2016" />
+              <rect x="0" y="6" width="46" height="1.4" fill="#1c3324" opacity="0.6" />
+              <rect x="0" y="14" width="46" height="1.4" fill="#1c3324" opacity="0.6" />
+              <rect x="19" y="0" width="6" height="3" fill="#8a5a2a" opacity="0.28" />
+              <circle cx="6" cy="4" r="2.6" fill="#3a4a3a" />
+              <circle cx="17" cy="10" r="2.9" fill="#2a3a2a" />
+              <circle cx="29" cy="3" r="2.4" fill="#465a42" />
+              <circle cx="38" cy="12" r="2.7" fill="#31402e" />
+              <circle cx="10" cy="17" r="2.5" fill="#3d4d38" />
+              <circle cx="24" cy="19" r="2.8" fill="#2c3a28" />
+              <circle cx="42" cy="6" r="2.3" fill="#404f3c" />
+              <circle cx="3" cy="12" r="2" fill="#c9c2a8" opacity="0.45" />
+              <circle cx="33" cy="18" r="2.1" fill="#c9c2a8" opacity="0.35" />
+            </pattern>
+            {/* Net mesh — a plain square grid, upright (not rotated into a
+                diamond pattern the way netting is sometimes drawn). */}
+            <pattern id="racket-net-mesh" width="8" height="8" patternUnits="userSpaceOnUse">
+              <line x1="0" y1="0" x2="0" y2="8" stroke="#e7ece0" strokeWidth="0.8" opacity="0.6" />
+              <line x1="0" y1="0" x2="8" y2="0" stroke="#e7ece0" strokeWidth="0.8" opacity="0.6" />
+            </pattern>
+            {/* Everything from the horizon down, minus the court/apron
+                trapezoid — this is the stand's footprint, wrapping the
+                court on both sides rather than sitting only behind it. */}
+            <clipPath id="stand-clip">
+              <path fillRule="evenodd" d={`M0,110 H1600 V${VIEW_H} H0 Z ${courtPath}`} />
+            </clipPath>
+          </defs>
+
+          {/* Sky. */}
+          <rect width="1600" height={VIEW_H} fill="url(#racket-sky)" />
+
+          {/* Roof truss — the triangular lattice that's the single most
+              recognizable feature of Centre Court, rendered as a light
+              silhouette against the night sky rather than lit from the
+              front like a daylight photo. */}
+          <g stroke="#aab3a0" fill="none" opacity="0.55">
+            <line x1="0" y1="65" x2="1600" y2="65" strokeWidth="3" />
+            <line x1="0" y1="107" x2="1600" y2="107" strokeWidth="4" />
+            <polyline
+              points="0,65 40,107 80,65 120,107 160,65 200,107 240,65 280,107 320,65 360,107 400,65 440,107 480,65 520,107 560,65 600,107 640,65 680,107 720,65 760,107 800,65 840,107 880,65 920,107 960,65 1000,107 1040,65 1080,107 1120,65 1160,107 1200,65 1240,107 1280,65 1320,107 1360,65 1400,107 1440,65 1480,107 1520,65 1560,107 1600,65"
+              strokeWidth="2"
+            />
+          </g>
+
+          {/* Grandstand — clipped to everything except the court/apron, so
+              it reads as a stand wrapping behind AND alongside the court,
+              not just a flat band across the top. The crowd texture is one
+              rect; the far-hazier/near-clearer depth cue is one continuous
+              gradient overlay, not stepped bands — nothing for a seam to
+              form at. */}
+          <g clipPath="url(#stand-clip)">
+            <rect x="0" y="110" width="1600" height={VIEW_H - 110} fill="url(#racket-crowd)" />
+            <rect x="0" y="110" width="1600" height={VIEW_H - 110} fill="url(#racket-haze)" />
+          </g>
+          {/* Low front wall of the stand, right at the horizon. */}
+          <rect x="0" y="255" width="1600" height="10" fill="#0c100b" />
+
+          {/* Grass court + apron. */}
+          <path d={courtPath} fill="#33592a" />
+
+          {/* Mowing stripes, alternating shade, narrowing in perspective
+              toward the horizon — a real player's-eye view. Capped at the
+              same far-runoff depth (y=406) as the far baseline rather than
+              carried all the way to the true vanishing point (800,260):
+              stopping there left a tall, visible sliver of grass poking up
+              through the stand behind it. */}
+          <g opacity="0.95">
+            <polygon points={`${COURT_NEAR_L},${VIEW_H} 306.4,${VIEW_H} 687.2,406 ${COURT_FAR_L},406`} fill="#3e6b32" />
+            <polygon points={`306.4,${VIEW_H} 470.9,${VIEW_H} 724.8,406 687.2,406`} fill="#33592a" />
+            <polygon points={`470.9,${VIEW_H} 635.5,${VIEW_H} 762.4,406 724.8,406`} fill="#3e6b32" />
+            <polygon points={`635.5,${VIEW_H} 800,${VIEW_H} 800,406 762.4,406`} fill="#33592a" />
+            <polygon points={`800,${VIEW_H} 964.5,${VIEW_H} 837.6,406 800,406`} fill="#3e6b32" />
+            <polygon points={`964.5,${VIEW_H} 1129.1,${VIEW_H} 875.2,406 837.6,406`} fill="#33592a" />
+            <polygon points={`1129.1,${VIEW_H} 1293.6,${VIEW_H} 912.8,406 875.2,406`} fill="#3e6b32" />
+            <polygon points={`1293.6,${VIEW_H} ${COURT_NEAR_R},${VIEW_H} ${COURT_FAR_R},406 912.8,406`} fill="#33592a" />
+          </g>
+
+          {/* Court lines. */}
+          <g stroke="#f3f6ec" strokeWidth="3.5" opacity="0.9" fill="none">
+            {/* Doubles sidelines */}
+            <line x1="306.4" y1="900" x2="675.7" y2="421.2" />
+            <line x1="1293.6" y1="900" x2="924.3" y2="421.2" />
+            {/* Singles sidelines */}
+            <line x1="429.7" y1="900" x2="706.8" y2="421.2" />
+            <line x1="1170.4" y1="900" x2="893.2" y2="421.2" />
+            {/* Near baseline */}
+            <line x1="306.4" y1="900" x2="1293.6" y2="900" />
+            {/* Far baseline */}
+            <line x1="675.7" y1="421.2" x2="924.3" y2="421.2" />
+            {/* Near + far service lines */}
+            <line x1="580.3" y1="639.7" x2="1019.7" y2="639.7" strokeWidth="2.5" />
+            <line x1="687.3" y1="454.8" x2="912.8" y2="454.8" strokeWidth="2" />
+            {/* Center service line */}
+            <line x1="800" y1="639.7" x2="800" y2="454.8" strokeWidth="2.5" />
+          </g>
+
+          {/* Net — a real mesh band with height, not a flat line lying on
+              the court: taller at the posts, sagging slightly toward the
+              center the way a real net does, with a solid white tape along
+              the top edge and posts rising a bit above and below it. */}
+          <g>
+            <path d="M568,517.5 L568,474 Q800,466 1032,474 L1032,517.5 Z" fill="url(#racket-net-mesh)" />
+            <path d="M568,474 Q800,466 1032,474" stroke="#f3f6ec" strokeWidth="4" fill="none" opacity="0.92" />
+            <line x1="566" y1="470" x2="566" y2="524" stroke="#c9d1bd" strokeWidth="4.5" />
+            <line x1="1034" y1="470" x2="1034" y2="524" stroke="#c9d1bd" strokeWidth="4.5" />
+          </g>
+        </svg>
+
+        <RacketCanvas fallProgress={fallProgress} rotateProgress={rotateProgress} ballProgress={ballProgress} />
+      </section>
+    </div>
+  );
+}

@@ -1,0 +1,34 @@
+{
+  "nav": {
+    "projects": "Projects",
+    "about": "About me",
+    "contact": "Contact"
+  },
+
+  "hero": {
+    "eyebrow": "Software Engineer",
+    "tagline": "I build products end-to-end — from distributed backends to the pixels people actually touch.",
+    "experience": "{years}+ years of experience",
+    "cta": "View my work"
+  },
+
+  "about": {
+    "heading": "About me",
+    "body": "Hi! I'm Giuly, a Software Engineer from Argentina. I build web and mobile applications with React, React Native, Node, Java, and plenty of other tools along the way. I enjoy challenges, I'm always eager to learn something new, and honestly, I like getting things done and seeing results ;)",
+
+    "outsideHeading": "Outside of work",
+    "outsideBody": "As you can probably tell, I love tennis. I'm a big fan of sports in general, but I also love music, board games, Rubik's cubes, travelling, photography, movies, and books. I'm always finding a new hobby to get into."
+  },
+
+  "projects": {
+    "heading": "Selected work",
+    "github": "Code",
+    "live": "Live",
+    "private": "Private repo"
+  },
+
+  "footer": {
+    "heading": "Get in touch",
+    "body": "TODO — add your preferred contact method here (email, LinkedIn, etc.)."
+  }
+}

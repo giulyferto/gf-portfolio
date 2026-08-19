@@ -1,0 +1,29 @@
+{
+  "nav": {
+    "projects": "Proyectos",
+    "about": "Sobre mí",
+    "contact": "Contacto"
+  },
+  "hero": {
+    "eyebrow": "Ingeniera de Software",
+    "tagline": "Construyo productos de punta a punta — desde backends distribuidos hasta los píxeles que la gente realmente toca.",
+    "experience": "{years}+ años de experiencia",
+    "cta": "Ver mi trabajo"
+  },
+  "about": {
+    "heading": "Sobre mí",
+    "body": "Hola! Soy Giuly, Ingeniera en Software de Argentina. Desarrollo aplicaciones web y mobile con React, React Native, Node, Java, y varias herramientas más en el camino. Me gustan los desafíos, siempre estoy con ganas de aprender algo nuevo y, honestamente, me gusta llevar las cosas a cabo y ver resultados ;)",
+    "outsideHeading": "Fuera del trabajo",
+    "outsideBody": "Como ya habrás notado, me encanta el tenis. Soy muy fan de los deportes en general, pero también me gusta mucho la música, los juegos de mesa, los cubos de Rubik, viajar, la fotografía, las películas y los libros. Siempre estoy descubriendo algún hobby nuevo que me entusiasma."
+  },
+  "projects": {
+    "heading": "Trabajos seleccionados",
+    "github": "Código",
+    "live": "En vivo",
+    "private": "Repo privado"
+  },
+  "footer": {
+    "heading": "Contactame",
+    "body": "TODO — agregá acá tu método de contacto preferido (email, LinkedIn, etc.)."
+  }
+}

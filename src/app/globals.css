@@ -1,0 +1,105 @@
+@import "tailwindcss";
+
+:root {
+  --background: #0a0d08;
+  --surface: #12160d;
+  --foreground: #f3f6ec;
+  --muted: #8a9478;
+  --accent: #cfe84f;
+  --accent-2: #ffb84d;
+  /* Hard-court blue for the About section's court motif — deliberately a
+     real court color (US Open plexicushion blue), not a tint of the site's
+     green accent, so the section reads as "you walked onto the court". */
+  --court: #1c4f7c;
+  --court-deep: #123655;
+  --court-line: var(--foreground);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-accent: var(--accent);
+  --color-accent-2: var(--accent-2);
+  --color-court: var(--court);
+  --color-court-deep: var(--court-deep);
+  --color-court-line: var(--court-line);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+}
+
+/* Hero overlay fade-ins, timed to line up with the particle field's
+   formation (~1.8s) and dispersal (~5.4s) — see TennisBallField.tsx. */
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-1 {
+  animation: fade-in-up 1.2s ease forwards;
+  animation-delay: 1.8s;
+}
+
+.animate-fade-in-2 {
+  animation: fade-in-up 1.2s ease forwards;
+  animation-delay: 5.4s;
+}
+
+/* About section: the heading's fall is driven directly by scroll position
+   (see RevealDrop.tsx — it sets transform/opacity inline as you scroll, not
+   via a keyframe animation), so it lands exactly when you've scrolled it
+   into place. Only the brief settle-bounce afterward, and the impact mark
+   it leaves, are fixed-duration CSS animations. */
+@keyframes settle-bounce {
+  0% {
+    transform: translateY(0);
+    animation-timing-function: ease-out;
+  }
+  25% {
+    transform: translateY(-16px);
+    animation-timing-function: ease-in;
+  }
+  50% {
+    transform: translateY(0);
+    animation-timing-function: ease-out;
+  }
+  75% {
+    transform: translateY(-5px);
+    animation-timing-function: ease-in;
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+
+@keyframes impact-pulse {
+  0% {
+    opacity: 0.9;
+    transform: translateX(-50%) scale(0.3);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(-50%) scale(2.4);
+  }
+}
+
+.animate-settle-bounce {
+  animation: settle-bounce 0.55s linear forwards;
+}
+
+.animate-impact-pulse {
+  animation: impact-pulse 0.7s ease-out forwards;
+}
