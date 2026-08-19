@@ -24,7 +24,11 @@
     "heading": "Selected work",
     "github": "Code",
     "live": "Live",
-    "private": "Private repo"
+    "private": "Private repo",
+    "seeMore": "See more",
+    "close": "Close",
+    "previous": "Previous project",
+    "next": "Next project"
   },
 
   "footer": {

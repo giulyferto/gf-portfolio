@@ -1,14 +1,21 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import type { TransitionEvent } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import RacketCanvas from "./RacketCanvas";
+import ProjectModal from "./ProjectModal";
+import ProjectCardFace from "./ProjectCardFace";
+import { projects, type Locale } from "@/data/projects";
 
 // WIP staging area for the racket-rotates-into-a-project-carousel scene
 // being built in stages. Three acts share the pinned scroll budget, the same
 // way AboutCourt splits its own budget with FLIP_START: the court is empty
 // at first, the racket (real 3D model) falls in, rotates 90° from vertical
-// to horizontal, then a tennis ball falls in and settles at center — ready
-// for a later phase to turn it into the project carousel.
+// to horizontal, then a tennis ball falls in and settles at center. From
+// there it's the project carousel: clicking the ball (see RacketScene.tsx)
+// swings the racket and advances to the next project, shown in the card
+// docked at the bottom of the frame rather than crowding the 3D scene.
 //
 // The court background is a one-point-perspective grass court as seen from
 // a player standing just behind the near baseline (not the aerial angle of
@@ -39,11 +46,66 @@ const COURT_FAR_R = 950.4;
 const courtPath = `M${COURT_FAR_L},406 L${COURT_FAR_R},406 L${COURT_NEAR_R},${VIEW_H} L${COURT_NEAR_L},${VIEW_H} Z`;
 
 export default function RacketIntro() {
+  const locale = useLocale() as Locale;
+  const t = useTranslations("projects");
   const wrapperRef = useRef<HTMLDivElement>(null);
   const [reduceMotion, setReduceMotion] = useState(false);
   const [fallProgress, setFallProgress] = useState(0);
   const [rotateProgress, setRotateProgress] = useState(0);
   const [ballProgress, setBallProgress] = useState(0);
+  const [displayIndex, setDisplayIndex] = useState(0);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  // Bumped to fire the racket/ball swing from outside the 3D scene (the
+  // arrow buttons live in plain DOM, not the R3F canvas) — RacketScene
+  // watches this via useEffect and plays the same animation the ball's own
+  // onClick does, mirrored by hitDirection. Starts at 0 so the mount-time
+  // pass-through doesn't trigger a swing.
+  const [hitSignal, setHitSignal] = useState(0);
+  const [hitDirection, setHitDirection] = useState<1 | -1>(1);
+
+  // Cube-flip transition for the docked card: while non-null, the card
+  // renders as a rotating cube with the outgoing project on its front face
+  // and the incoming one on the face matching the travel direction (right
+  // face for "next", left for "prev") — so the swap visibly comes from the
+  // side you're navigating toward, mirroring the racket swing.
+  const [cubeTransition, setCubeTransition] = useState<{ direction: 1 | -1; nextIndex: number } | null>(null);
+  const [cubeAngle, setCubeAngle] = useState(0);
+  const [cubeSize, setCubeSize] = useState<{ width: number; height: number } | null>(null);
+  const cardRef = useRef<HTMLDivElement>(null);
+
+  const handleHit = (direction: 1 | -1) => {
+    if (projects.length === 0 || cubeTransition) return;
+    const nextIndex = (displayIndex + direction + projects.length) % projects.length;
+    const rect = cardRef.current?.getBoundingClientRect();
+    setCubeSize({ width: rect?.width ?? 448, height: rect?.height ?? 220 });
+    setCubeTransition({ direction, nextIndex });
+    setIsModalOpen(false);
+  };
+
+  const handleArrow = (direction: 1 | -1) => {
+    setHitDirection(direction);
+    setHitSignal((s) => s + 1);
+  };
+
+  // The cube mounts at angle 0 (matching the idle card it replaces) so the
+  // browser paints a real "before" frame, then this flips it to ±90° on the
+  // next frame — without the delay, the rotation would apply in the same
+  // commit as the mount and the transition would have nothing to animate
+  // from.
+  useEffect(() => {
+    if (!cubeTransition) return;
+    const raf = requestAnimationFrame(() => setCubeAngle(-90 * cubeTransition.direction));
+    return () => cancelAnimationFrame(raf);
+  }, [cubeTransition]);
+
+  const handleCubeTransitionEnd = (e: TransitionEvent<HTMLDivElement>) => {
+    if (e.propertyName !== "transform" || !cubeTransition) return;
+    setDisplayIndex(cubeTransition.nextIndex);
+    setCubeTransition(null);
+    setCubeAngle(0);
+  };
+
+  const project = projects.length > 0 ? projects[displayIndex] : null;
 
   useEffect(() => {
     const mql = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -73,7 +135,14 @@ export default function RacketIntro() {
       const p = scrollable > 0 ? Math.min(1, Math.max(0, -rect.top / scrollable)) : 1;
       setFallProgress(Math.min(1, p / FALL_END));
       setRotateProgress(Math.max(0, Math.min(1, (p - FALL_END) / (ROTATE_END - FALL_END))));
-      setBallProgress(Math.max(0, Math.min(1, (p - ROTATE_END) / (1 - ROTATE_END))));
+      // Capped so the ball finishes falling at 65% through its own phase,
+      // not 100% — otherwise it lands fully settled at the *exact* same
+      // scroll position the pin releases at, leaving zero scroll room to
+      // actually click it before the page moves on to Projects. The
+      // remaining 35% of the phase (~12% of the whole pin) holds it settled
+      // while still pinned.
+      const ballLocalRaw = Math.max(0, Math.min(1, (p - ROTATE_END) / (1 - ROTATE_END)));
+      setBallProgress(Math.min(1, ballLocalRaw / 0.65));
     };
 
     const onScroll = () => {
@@ -92,7 +161,7 @@ export default function RacketIntro() {
   }, [reduceMotion]);
 
   return (
-    <div ref={wrapperRef} className="relative" style={{ height: `${PIN_HEIGHT_VH}vh` }}>
+    <div id="projects" ref={wrapperRef} className="relative" style={{ height: `${PIN_HEIGHT_VH}vh` }}>
       <section className="sticky top-0 h-screen min-h-[640px] w-full overflow-hidden bg-background">
         <svg
           aria-hidden
@@ -243,8 +312,122 @@ export default function RacketIntro() {
           </g>
         </svg>
 
-        <RacketCanvas fallProgress={fallProgress} rotateProgress={rotateProgress} ballProgress={ballProgress} />
+        <RacketCanvas
+          fallProgress={fallProgress}
+          rotateProgress={rotateProgress}
+          ballProgress={ballProgress}
+          onHit={handleHit}
+          hitSignal={hitSignal}
+          hitDirection={hitDirection}
+        />
+
+        {/* Project card, docked at the bottom rather than anchored to the
+            ball in the 3D scene — it shouldn't jiggle with the ball's hit
+            reaction, and needs real DOM/CSS for the tag list and link. */}
+        {project && ballProgress >= 1 && (
+          <div className="pointer-events-none absolute inset-x-0 bottom-8 flex items-center justify-center gap-3 px-6">
+            {projects.length > 1 && (
+              <button
+                type="button"
+                onClick={() => handleArrow(-1)}
+                aria-label={t("previous")}
+                className="pointer-events-auto shrink-0 rounded-full border border-white/10 bg-surface/95 p-2.5 font-mono text-foreground backdrop-blur-sm transition-colors hover:border-accent/40 hover:text-accent"
+              >
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M15 18l-6-6 6-6" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
+            )}
+            <div ref={cardRef} className="pointer-events-auto w-full max-w-md">
+              {cubeTransition && cubeSize ? (
+                // The rounded corners live here, on this static (non-rotating)
+                // clipping wrapper, rather than on each face — a face rounds
+                // all 4 of its own corners independently, so at the seam
+                // where two faces meet, their rounded corners don't touch and
+                // it reads as a notch. Clipping from outside keeps a single,
+                // continuous rounded silhouette no matter how the cube inside
+                // is rotated.
+                <div
+                  className="overflow-hidden rounded-2xl"
+                  style={{ perspective: 1400, width: cubeSize.width, height: cubeSize.height }}
+                >
+                  <div
+                    onTransitionEnd={handleCubeTransitionEnd}
+                    className="relative h-full w-full pointer-events-none"
+                    style={{
+                      transformStyle: "preserve-3d",
+                      // translateZ(-halfWidth) first, so the cube's rotation
+                      // pivot sits at its true center — without it, each
+                      // face's own translateZ(+halfWidth) below leaves the
+                      // whole assembly sitting proud of the clip plane at
+                      // rest, letting the overflow clip crop it.
+                      transform: `translateZ(-${cubeSize.width / 2}px) rotateY(${cubeAngle}deg)`,
+                      transition: "transform 550ms cubic-bezier(0.65, 0, 0.35, 1)",
+                    }}
+                  >
+                    <div
+                      className="absolute inset-0"
+                      style={{ backfaceVisibility: "hidden", transform: `translateZ(${cubeSize.width / 2}px)` }}
+                    >
+                      <ProjectCardFace
+                        project={projects[displayIndex]}
+                        index={displayIndex}
+                        total={projects.length}
+                        locale={locale}
+                        seeMoreLabel={t("seeMore")}
+                        onSeeMore={() => setIsModalOpen(true)}
+                        rounded={false}
+                      />
+                    </div>
+                    <div
+                      className="absolute inset-0"
+                      style={{
+                        backfaceVisibility: "hidden",
+                        transform: `rotateY(${cubeTransition.direction * 90}deg) translateZ(${cubeSize.width / 2}px)`,
+                      }}
+                    >
+                      <ProjectCardFace
+                        project={projects[cubeTransition.nextIndex]}
+                        index={cubeTransition.nextIndex}
+                        total={projects.length}
+                        locale={locale}
+                        seeMoreLabel={t("seeMore")}
+                        onSeeMore={() => setIsModalOpen(true)}
+                        rounded={false}
+                      />
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <ProjectCardFace
+                  project={project}
+                  index={displayIndex}
+                  total={projects.length}
+                  locale={locale}
+                  seeMoreLabel={t("seeMore")}
+                  onSeeMore={() => setIsModalOpen(true)}
+                />
+              )}
+            </div>
+            {projects.length > 1 && (
+              <button
+                type="button"
+                onClick={() => handleArrow(1)}
+                aria-label={t("next")}
+                className="pointer-events-auto shrink-0 rounded-full border border-white/10 bg-surface/95 p-2.5 font-mono text-foreground backdrop-blur-sm transition-colors hover:border-accent/40 hover:text-accent"
+              >
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M9 6l6 6-6 6" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
+            )}
+          </div>
+        )}
       </section>
+
+      {project && isModalOpen && (
+        <ProjectModal project={project} locale={locale} onClose={() => setIsModalOpen(false)} />
+      )}
     </div>
   );
 }

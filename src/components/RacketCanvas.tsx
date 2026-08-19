@@ -11,10 +11,25 @@ export default function RacketCanvas({
   fallProgress,
   rotateProgress,
   ballProgress,
+  onHit,
+  hitSignal,
+  hitDirection,
 }: {
   fallProgress?: number;
   rotateProgress?: number;
   ballProgress?: number;
+  onHit?: (direction: 1 | -1) => void;
+  hitSignal?: number;
+  hitDirection?: 1 | -1;
 }) {
-  return <RacketScene fallProgress={fallProgress} rotateProgress={rotateProgress} ballProgress={ballProgress} />;
+  return (
+    <RacketScene
+      fallProgress={fallProgress}
+      rotateProgress={rotateProgress}
+      ballProgress={ballProgress}
+      onHit={onHit}
+      hitSignal={hitSignal}
+      hitDirection={hitDirection}
+    />
+  );
 }
