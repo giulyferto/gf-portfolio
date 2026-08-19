@@ -2,7 +2,9 @@
   "nav": {
     "projects": "Projects",
     "about": "About me",
-    "contact": "Contact"
+    "contact": "Contact",
+    "openMenu": "Open menu",
+    "closeMenu": "Close menu"
   },
 
   "hero": {

@@ -27,7 +27,17 @@ export default function ProjectCardFace({
 }) {
   return (
     <div
-      className={`h-full w-full border border-white/10 bg-surface/95 p-5 text-center backdrop-blur-sm ${rounded ? "rounded-2xl" : ""}`}
+      // Capped so a longer title/tag list can't balloon the card taller than
+      // its neighbors — that variation is what made the cube-flip transition
+      // (which measures this card's rendered size at the moment it starts)
+      // look inconsistent from one navigation to the next. Deliberately no
+      // min-height: the docked card is anchored to the bottom of the frame
+      // and grows upward, so forcing shorter cards to match the tallest one
+      // pushes their top edge up into the ball/racket sitting above them —
+      // letting the card shrink to its actual content is what keeps that
+      // clearance. overflow-y-auto is the fallback for whatever content
+      // doesn't fit within max-height, rather than clipping it outright.
+      className={`h-full w-full max-h-80 overflow-y-auto border border-white/10 bg-surface/95 p-4 text-center backdrop-blur-sm sm:max-h-96 sm:p-5 ${rounded ? "rounded-2xl" : ""}`}
     >
       <p className="font-mono text-xs text-muted">
         {String(index + 1).padStart(2, "0")} / {String(total).padStart(2, "0")}

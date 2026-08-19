@@ -10,7 +10,7 @@
  */
 
 import { useMemo, useRef } from "react";
-import { Canvas, useFrame } from "@react-three/fiber";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import { makeTennisBallTexture } from "@/lib/tennisBallTexture";
 
@@ -29,8 +29,11 @@ function easeInOutCubic(x: number) {
   return x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
 }
 
-function sampleTextPoints(text: string, desiredCount: number, planeW: number) {
-  const canvasH = 260;
+// lines.length === 1 renders exactly as before (one row, tightly fit); more
+// than one stacks rows top-to-bottom, each centered to the widest row — used
+// on narrow viewports to lay the name out as first name / last name instead
+// of one long word that has to shrink to fit.
+function sampleTextPoints(lines: string[], desiredCount: number, planeW: number) {
   const fontSize = 160;
   // Lighter than the heaviest weight on purpose — at 800 the counters inside
   // letters like "a" and "e" shrink to slits a ball's own footprint can
@@ -40,18 +43,26 @@ function sampleTextPoints(text: string, desiredCount: number, planeW: number) {
   // so letters sit further apart than a ball's diameter can bridge — without
   // this, adjacent letters read as one fused blob once balls are placed.
   const letterSpacing = fontSize * 0.12;
-  const chars = [...text];
+  const lineChars = lines.map((line) => [...line]);
 
-  // Measure first so the canvas can be sized to fit the word tightly — the
-  // word is what maps onto the fixed-width plane, so a canvas padded with
+  // Measure first so the canvas can be sized to fit the widest row tightly —
+  // that's what maps onto the fixed-width plane, so a canvas padded with
   // unused space would shrink the rendered letters (and their strokes,
   // relative to a ball's fixed size) for no reason.
   const measureCtx = document.createElement("canvas").getContext("2d")!;
   measureCtx.font = fontSpec;
-  const widths = chars.map((c) => measureCtx.measureText(c).width);
-  const totalWidth = widths.reduce((a, b) => a + b, 0) + letterSpacing * (chars.length - 1);
+  const lineWidths = lineChars.map((chars) => chars.map((c) => measureCtx.measureText(c).width));
+  const lineTotalWidths = lineChars.map(
+    (chars, li) => lineWidths[li].reduce((a, b) => a + b, 0) + letterSpacing * Math.max(0, chars.length - 1),
+  );
   const padding = fontSize * 0.35;
-  const canvasW = Math.ceil(totalWidth + padding * 2);
+  const canvasW = Math.ceil(Math.max(...lineTotalWidths) + padding * 2);
+  // A single line keeps the exact original canvas height (and the vertical
+  // centering tuned for it); stacked lines only need enough headroom for
+  // their own glyphs plus a modest gap between rows, not a second full
+  // single-line margin each.
+  const lineHeight = fontSize * 1.05;
+  const canvasH = lines.length === 1 ? 260 : Math.ceil(lineHeight * lines.length + fontSize * 0.5);
 
   const canvas = document.createElement("canvas");
   canvas.width = canvasW;
@@ -63,11 +74,15 @@ function sampleTextPoints(text: string, desiredCount: number, planeW: number) {
   ctx.font = fontSpec;
   ctx.textAlign = "left";
   ctx.textBaseline = "middle";
-  let penX = padding;
-  const baselineY = canvasH / 2 + fontSize * 0.04;
-  chars.forEach((c, i) => {
-    ctx.fillText(c, penX, baselineY);
-    penX += widths[i] + letterSpacing;
+  const topPad = lines.length === 1 ? 0 : (canvasH - lineHeight * lines.length) / 2;
+  lineChars.forEach((chars, li) => {
+    let penX = (canvasW - lineTotalWidths[li]) / 2;
+    const baselineY =
+      lines.length === 1 ? canvasH / 2 + fontSize * 0.04 : topPad + lineHeight * (li + 0.5) + fontSize * 0.04;
+    chars.forEach((c, i) => {
+      ctx.fillText(c, penX, baselineY);
+      penX += lineWidths[li][i] + letterSpacing;
+    });
   });
   const data = ctx.getImageData(0, 0, canvasW, canvasH).data;
   const stride = 2;
@@ -222,7 +237,25 @@ function sampleTextPoints(text: string, desiredCount: number, planeW: number) {
 
 function Scene({ name }: { name: string }) {
   const texture = useMemo(() => makeTennisBallTexture(), []);
-  const textPositions = useMemo(() => sampleTextPoints(name, COUNT, 16).positions, [name]);
+
+  // viewport.width is the *actual* visible width in world units at the
+  // current aspect ratio (three.js's vertical fov keeps visible height
+  // fixed, so a narrow/tall phone screen sees much less width than a
+  // landscape one) — used both to decide whether the full name fits on one
+  // row and to size the plane so it never overflows the frustum. Reacts to
+  // resize/orientation changes on its own since useThree tracks it live.
+  const viewport = useThree((state) => state.viewport);
+  const isNarrow = viewport.width < 10;
+  const lines = useMemo(() => {
+    if (!isNarrow) return [name];
+    const spaceIdx = name.indexOf(" ");
+    return spaceIdx === -1 ? [name] : [name.slice(0, spaceIdx), name.slice(spaceIdx + 1)];
+  }, [name, isNarrow]);
+  // Rounded to the nearest half unit so a continuous window drag doesn't
+  // recompute the (fairly expensive) canvas + flood-fill sampling on every
+  // pixel of movement, only every so often.
+  const planeW = Math.round(Math.min(16, Math.max(3, viewport.width * 0.85)) * 2) / 2;
+  const textPositions = useMemo(() => sampleTextPoints(lines, COUNT, planeW).positions, [lines, planeW]);
 
   const ambientAnchors = useMemo(() => {
     const arr = new Float32Array(COUNT * 3);

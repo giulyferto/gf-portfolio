@@ -1,6 +1,7 @@
 import { getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import LocaleSwitcher from "./LocaleSwitcher";
+import MobileNav from "./MobileNav";
 
 export default async function Nav() {
   const t = await getTranslations("nav");
@@ -22,7 +23,16 @@ export default async function Nav() {
             {t("contact")}
           </Link>
         </div>
-        <LocaleSwitcher />
+        <div className="flex items-center gap-4">
+          <LocaleSwitcher />
+          <MobileNav
+            projectsLabel={t("projects")}
+            aboutLabel={t("about")}
+            contactLabel={t("contact")}
+            openLabel={t("openMenu")}
+            closeLabel={t("closeMenu")}
+          />
+        </div>
       </nav>
     </header>
   );

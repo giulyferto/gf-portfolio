@@ -1,7 +1,7 @@
 "use client";
 
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
-import { Canvas, useFrame } from "@react-three/fiber";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import type { ThreeEvent } from "@react-three/fiber";
 import { Html, useGLTF } from "@react-three/drei";
 import * as THREE from "three";
@@ -32,7 +32,7 @@ const BALL_EXIT_DISTANCE = 6; // world units — comfortably past the frame edge
 // changes right as the ball visually gets struck, matching BALL_START_DELAY_MS.
 const CONTACT_DELAY_MS = BALL_START_DELAY_MS;
 
-function RacketModel() {
+function RacketModel({ targetSize }: { targetSize: number }) {
   const { scene } = useGLTF("/Tennis-Racket.glb");
 
   const model = useMemo(() => {
@@ -55,7 +55,7 @@ function RacketModel() {
     const size = new THREE.Vector3();
     rawBox.getSize(size);
     const maxDim = Math.max(size.x, size.y, size.z) || 1;
-    racket.scale.setScalar(3 / maxDim);
+    racket.scale.setScalar(targetSize / maxDim);
 
     const scaledBox = new THREE.Box3().setFromObject(racket);
     const center = new THREE.Vector3();
@@ -68,7 +68,7 @@ function RacketModel() {
     racket.rotation.y = Math.PI;
 
     return racket;
-  }, [scene]);
+  }, [scene, targetSize]);
 
   return <primitive object={model} />;
 }
@@ -104,6 +104,20 @@ function Rig({
   const hitStartRef = useRef<number | null>(null);
   const [isHitting, setIsHitting] = useState(false);
   const texture = useMemo(() => makeTennisBallTexture(), []);
+
+  // The racket is normally sized to fill 3 world units (its longest
+  // dimension), but on a narrow/tall phone viewport, three.js's vertical fov
+  // means far less *width* is actually visible than on desktop — a fixed
+  // 3-unit racket can be wider than the whole visible frustum and get
+  // clipped at the sides once it rotates horizontal. Cap it to a fraction of
+  // the real visible width instead, tracked live via useThree so it adapts
+  // to resizes/orientation changes.
+  const viewportWidth = useThree((state) => state.viewport.width);
+  const targetSize = Math.min(3, Math.max(1.4, viewportWidth * 0.55));
+  // Scaled by the same factor as the racket (targetSize/3, its desktop
+  // size) so the ball stays in proportion to it at any viewport width,
+  // rather than looking oversized next to a racket that's shrunk down.
+  const ballRadius = 0.55 * (targetSize / 3);
 
   // The swing itself always plays the same way regardless of which way the
   // carousel is navigating — direction only decides which project (and
@@ -199,11 +213,11 @@ function Rig({
     <>
       <group ref={groupRef}>
         <group ref={tiltGroupRef}>
-          <RacketModel />
+          <RacketModel targetSize={targetSize} />
         </group>
       </group>
       <mesh ref={ballRef} onClick={handleHit}>
-        <sphereGeometry args={[0.55, 32, 24]} />
+        <sphereGeometry args={[ballRadius, 32, 24]} />
         <meshStandardMaterial map={texture} roughness={0.92} metalness={0.02} />
       </mesh>
       {ballProgress >= 1 && !isHitting && (

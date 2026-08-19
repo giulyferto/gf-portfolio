@@ -32,6 +32,17 @@ const PIN_HEIGHT_VH = 400;
 const FALL_END = 1 / 3;
 const ROTATE_END = 2 / 3;
 const VIEW_H = 1050;
+// On a narrow/portrait viewport, preserveAspectRatio="slice" has to zoom in
+// far enough to cover the full 1050-tall artwork, which crops the sides down
+// to a sliver of the court — meanwhile most of that height is spent on sky,
+// roof truss and empty grandstand above the court, which is what's actually
+// forcing the zoom. Cropping the *viewBox* itself to start here (SVG clips
+// to it automatically, no need to touch the elements below) drops that dead
+// space, so a portrait screen isn't paying its width budget for a wall of
+// black sky it'll barely show any of anyway.
+const NARROW_VIEW_TOP = 320;
+
+
 
 // The court/apron trapezoid — near corners at the bottom edge, far corners
 // up at the back-of-stand line (y=406). Everything inside this shape is
@@ -53,6 +64,18 @@ export default function RacketIntro() {
   const [fallProgress, setFallProgress] = useState(0);
   const [rotateProgress, setRotateProgress] = useState(0);
   const [ballProgress, setBallProgress] = useState(0);
+  // Defaults to the full, uncropped view — matches what the server renders
+  // (no window to measure there), corrected on mount/resize below.
+  const [viewTop, setViewTop] = useState(0);
+  // Separate from viewTop's portrait-only crop — the roof truss reads as
+  // clutter on any smaller window, landscape or not, so it's hidden by
+  // width alone rather than aspect ratio.
+  const [hideTruss, setHideTruss] = useState(false);
+  // On very small screens the docked card's title/summary can wrap onto
+  // several lines, growing tall enough to overlap the ball/racket sitting
+  // above it — lifting the whole 3D scene up gives the card room to grow
+  // into without the two fighting for the same vertical space.
+  const [liftScene, setLiftScene] = useState(false);
   const [displayIndex, setDisplayIndex] = useState(0);
   const [isModalOpen, setIsModalOpen] = useState(false);
   // Bumped to fire the racket/ball swing from outside the 3D scene (the
@@ -123,6 +146,17 @@ export default function RacketIntro() {
   }, []);
 
   useEffect(() => {
+    const update = () => {
+      setViewTop(window.innerWidth / window.innerHeight < 1 ? NARROW_VIEW_TOP : 0);
+      setHideTruss(window.innerWidth < 1400);
+      setLiftScene(window.innerWidth < 400);
+    };
+    update();
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
+  }, []);
+
+  useEffect(() => {
     const wrapper = wrapperRef.current;
     if (!wrapper || reduceMotion) return;
 
@@ -166,7 +200,7 @@ export default function RacketIntro() {
         <svg
           aria-hidden
           className="pointer-events-none absolute inset-0 h-full w-full"
-          viewBox={`0 0 1600 ${VIEW_H}`}
+          viewBox={`0 ${viewTop} 1600 ${VIEW_H - viewTop}`}
           // xMidYMax (not YMid): anchors the bottom edge of the artwork to
           // the bottom of the frame, so a wide/short browser window always
           // crops into the sky at the top first — never into the baseline,
@@ -183,12 +217,8 @@ export default function RacketIntro() {
                 below would get its own independent 0%-100% cycle of the
                 gradient sized to *its own* bounding box — visible as a
                 seam/band at every tier boundary, where one tier's cycle
-                ends light and the next one's begins dark again. */}
-            <linearGradient id="racket-sky" x1="0" y1="0" x2="0" y2={VIEW_H} gradientUnits="userSpaceOnUse">
-              <stop offset="0%" stopColor="#050704" />
-              <stop offset="100%" stopColor="#111a10" />
-            </linearGradient>
-            {/* One continuous haze fade for the stand (far/top = hazier,
+                ends light and the next one's begins dark again. One
+                continuous haze fade for the stand (far/top = hazier,
                 near/bottom = clearer) — a single gradient rather than
                 several stepped rects at different opacities, since even a
                 smooth opacity *step* between two rects reads as a faint
@@ -224,42 +254,46 @@ export default function RacketIntro() {
               <line x1="0" y1="0" x2="0" y2="8" stroke="#e7ece0" strokeWidth="0.8" opacity="0.6" />
               <line x1="0" y1="0" x2="8" y2="0" stroke="#e7ece0" strokeWidth="0.8" opacity="0.6" />
             </pattern>
-            {/* Everything from the horizon down, minus the court/apron
-                trapezoid — this is the stand's footprint, wrapping the
-                court on both sides rather than sitting only behind it. */}
+            {/* Everything above the court/apron trapezoid — this is the
+                stand's footprint, wrapping the court on both sides and
+                running all the way up to the top edge rather than sitting
+                only behind it. */}
             <clipPath id="stand-clip">
-              <path fillRule="evenodd" d={`M0,110 H1600 V${VIEW_H} H0 Z ${courtPath}`} />
+              <path fillRule="evenodd" d={`M0,0 H1600 V${VIEW_H} H0 Z ${courtPath}`} />
             </clipPath>
           </defs>
 
-          {/* Sky. */}
-          <rect width="1600" height={VIEW_H} fill="url(#racket-sky)" />
+          {/* Grandstand — clipped to everything except the court/apron, so
+              it reads as a stand wrapping behind AND alongside the court,
+              not just a flat band across the top. Runs all the way up to
+              y=0 — no separate plain-sky band above it — so there's no bare
+              black gap before the crowd texture starts. The crowd texture is
+              one rect; the far-hazier/near-clearer depth cue is one
+              continuous gradient overlay, not stepped bands — nothing for a
+              seam to form at. */}
+          <g clipPath="url(#stand-clip)">
+            <rect width="1600" height={VIEW_H} fill="url(#racket-crowd)" />
+            <rect width="1600" height={VIEW_H} fill="url(#racket-haze)" />
+          </g>
 
           {/* Roof truss — the triangular lattice that's the single most
               recognizable feature of Centre Court, rendered as a light
-              silhouette against the night sky rather than lit from the
-              front like a daylight photo. */}
-          <g stroke="#aab3a0" fill="none" opacity="0.55">
-            <line x1="0" y1="65" x2="1600" y2="65" strokeWidth="3" />
-            <line x1="0" y1="107" x2="1600" y2="107" strokeWidth="4" />
-            <polyline
-              points="0,65 40,107 80,65 120,107 160,65 200,107 240,65 280,107 320,65 360,107 400,65 440,107 480,65 520,107 560,65 600,107 640,65 680,107 720,65 760,107 800,65 840,107 880,65 920,107 960,65 1000,107 1040,65 1080,107 1120,65 1160,107 1200,65 1240,107 1280,65 1320,107 1360,65 1400,107 1440,65 1480,107 1520,65 1560,107 1600,65"
-              strokeWidth="2"
-            />
-          </g>
-
-          {/* Grandstand — clipped to everything except the court/apron, so
-              it reads as a stand wrapping behind AND alongside the court,
-              not just a flat band across the top. The crowd texture is one
-              rect; the far-hazier/near-clearer depth cue is one continuous
-              gradient overlay, not stepped bands — nothing for a seam to
-              form at. */}
-          <g clipPath="url(#stand-clip)">
-            <rect x="0" y="110" width="1600" height={VIEW_H - 110} fill="url(#racket-crowd)" />
-            <rect x="0" y="110" width="1600" height={VIEW_H - 110} fill="url(#racket-haze)" />
-          </g>
-          {/* Low front wall of the stand, right at the horizon. */}
-          <rect x="0" y="255" width="1600" height="10" fill="#0c100b" />
+              silhouette on top of the grandstand rather than lit from the
+              front like a daylight photo. Drawn after the grandstand (which
+              now paints the full height, not just below the old sky band)
+              so it isn't painted over. Skipped on smaller windows — at that
+              size it reads as busy clutter rather than a detail worth the
+              space, landscape or portrait. */}
+          {!hideTruss && (
+            <g stroke="#aab3a0" fill="none" opacity="0.55">
+              <line x1="0" y1="65" x2="1600" y2="65" strokeWidth="3" />
+              <line x1="0" y1="107" x2="1600" y2="107" strokeWidth="4" />
+              <polyline
+                points="0,65 40,107 80,65 120,107 160,65 200,107 240,65 280,107 320,65 360,107 400,65 440,107 480,65 520,107 560,65 600,107 640,65 680,107 720,65 760,107 800,65 840,107 880,65 920,107 960,65 1000,107 1040,65 1080,107 1120,65 1160,107 1200,65 1240,107 1280,65 1320,107 1360,65 1400,107 1440,65 1480,107 1520,65 1560,107 1600,65"
+                strokeWidth="2"
+              />
+            </g>
+          )}
 
           {/* Grass court + apron. */}
           <path d={courtPath} fill="#33592a" />
@@ -312,28 +346,30 @@ export default function RacketIntro() {
           </g>
         </svg>
 
-        <RacketCanvas
-          fallProgress={fallProgress}
-          rotateProgress={rotateProgress}
-          ballProgress={ballProgress}
-          onHit={handleHit}
-          hitSignal={hitSignal}
-          hitDirection={hitDirection}
-        />
+        <div className="absolute inset-0" style={liftScene ? { transform: "translateY(-9vh)" } : undefined}>
+          <RacketCanvas
+            fallProgress={fallProgress}
+            rotateProgress={rotateProgress}
+            ballProgress={ballProgress}
+            onHit={handleHit}
+            hitSignal={hitSignal}
+            hitDirection={hitDirection}
+          />
+        </div>
 
         {/* Project card, docked at the bottom rather than anchored to the
             ball in the 3D scene — it shouldn't jiggle with the ball's hit
             reaction, and needs real DOM/CSS for the tag list and link. */}
         {project && ballProgress >= 1 && (
-          <div className="pointer-events-none absolute inset-x-0 bottom-8 flex items-center justify-center gap-3 px-6">
+          <div className="pointer-events-none absolute inset-x-0 bottom-4 flex items-center justify-center gap-2 px-3 sm:bottom-8 sm:gap-3 sm:px-6">
             {projects.length > 1 && (
               <button
                 type="button"
                 onClick={() => handleArrow(-1)}
                 aria-label={t("previous")}
-                className="pointer-events-auto shrink-0 rounded-full border border-white/10 bg-surface/95 p-2.5 font-mono text-foreground backdrop-blur-sm transition-colors hover:border-accent/40 hover:text-accent"
+                className="pointer-events-auto shrink-0 rounded-full border border-white/10 bg-surface/95 p-2 font-mono text-foreground backdrop-blur-sm transition-colors hover:border-accent/40 hover:text-accent sm:p-2.5"
               >
-                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2">
+                <svg viewBox="0 0 24 24" className="h-3.5 w-3.5 sm:h-4 sm:w-4" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M15 18l-6-6 6-6" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
               </button>
@@ -414,9 +450,9 @@ export default function RacketIntro() {
                 type="button"
                 onClick={() => handleArrow(1)}
                 aria-label={t("next")}
-                className="pointer-events-auto shrink-0 rounded-full border border-white/10 bg-surface/95 p-2.5 font-mono text-foreground backdrop-blur-sm transition-colors hover:border-accent/40 hover:text-accent"
+                className="pointer-events-auto shrink-0 rounded-full border border-white/10 bg-surface/95 p-2 font-mono text-foreground backdrop-blur-sm transition-colors hover:border-accent/40 hover:text-accent sm:p-2.5"
               >
-                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2">
+                <svg viewBox="0 0 24 24" className="h-3.5 w-3.5 sm:h-4 sm:w-4" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M9 6l6 6-6 6" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
               </button>
