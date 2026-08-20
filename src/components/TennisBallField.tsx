@@ -315,6 +315,22 @@ function Scene({ name }: { name: string }) {
     const hit = new THREE.Vector3();
     if (raycaster.ray.intersectPlane(planeZ0, hit)) repeller.copy(hit);
 
+    // The whole instancedMesh spins slowly around Y once the ambient field
+    // starts (see `ballsRef.current.rotation.y = rot` below) and never stops
+    // or resets — it keeps accumulating for as long as the tab is open, even
+    // while scrolled away from Hero. bx/by below are pre-rotation, local-
+    // space instance positions, but `repeller` is the raycast hit in world
+    // space. Left as a direct comparison, the two frames drift apart as rot
+    // grows: past ~90-180° (roughly 1-2 minutes after dispersal), a push
+    // that should go right gets applied left instead. Rotating the world
+    // repeller back into the mesh's local frame by -rot keeps the repel
+    // direction matching what's actually on screen. Only X needs correcting
+    // — rotation around Y doesn't move the Y axis, and repeller.z is always
+    // 0 (planeZ0 is the world z=0 plane), so the local-space repeller X is
+    // just its world X scaled by cos(rot).
+    const rot = ambientStarted ? (t - T_DISPERSE_END) * 0.04 : 0;
+    const localRepellerX = repeller.x * Math.cos(rot);
+
     const REPEL_RADIUS = 2.7;
     const REPEL_STRENGTH = 2.0;
 
@@ -337,7 +353,7 @@ function Scene({ name }: { name: string }) {
       let pushX = 0;
       let pushY = 0;
       if (ambientStarted) {
-        const dx = bx - repeller.x;
+        const dx = bx - localRepellerX;
         const dy = by - repeller.y;
         const d = Math.sqrt(dx * dx + dy * dy);
         if (d < REPEL_RADIUS && d > 0.001) {
@@ -371,8 +387,6 @@ function Scene({ name }: { name: string }) {
       ballsRef.current.setMatrixAt(i, dummy.matrix);
     }
     ballsRef.current.instanceMatrix.needsUpdate = true;
-
-    const rot = ambientStarted ? (t - T_DISPERSE_END) * 0.04 : 0;
     ballsRef.current.rotation.y = rot;
   });
 

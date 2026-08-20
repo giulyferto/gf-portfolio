@@ -359,22 +359,37 @@ export default function RacketIntro() {
 
         {/* Project card, docked at the bottom rather than anchored to the
             ball in the 3D scene — it shouldn't jiggle with the ball's hit
-            reaction, and needs real DOM/CSS for the tag list and link. */}
-        {project && ballProgress >= 1 && (
-          <div className="pointer-events-none absolute inset-x-0 bottom-4 flex items-center justify-center gap-2 px-3 sm:bottom-8 sm:gap-3 sm:px-6">
+            reaction, and needs real DOM/CSS for the tag list and link.
+            Always mounted once there's a project to show — previously this
+            only rendered once ballProgress reached 1 (i.e. after the user
+            had scrolled and the drop animation had run), so a no-JS client
+            or a crawler that doesn't execute the scroll listener never saw
+            a single project's title, summary, or links. Opacity now tracks
+            ballProgress directly (no CSS transition — see AboutCourt.tsx's
+            own note on this: a transition here would lag a frame behind the
+            scroll-driven value instead of matching it exactly), so the
+            reveal looks identical for JS users while the content itself is
+            unconditionally in the DOM for everyone else. */}
+        {project && (
+          <div
+            className={`absolute inset-x-0 bottom-4 flex items-center justify-center gap-2 px-3 sm:bottom-8 sm:gap-3 sm:px-6 ${
+              ballProgress >= 1 ? "pointer-events-auto" : "pointer-events-none"
+            }`}
+            style={{ opacity: ballProgress }}
+          >
             {projects.length > 1 && (
               <button
                 type="button"
                 onClick={() => handleArrow(-1)}
                 aria-label={t("previous")}
-                className="pointer-events-auto shrink-0 rounded-full border border-white/10 bg-surface/95 p-2 font-mono text-foreground backdrop-blur-sm transition-colors hover:border-accent/40 hover:text-accent sm:p-2.5"
+                className="shrink-0 rounded-full border border-white/10 bg-surface/95 p-2 font-mono text-foreground backdrop-blur-sm transition-colors hover:border-accent/40 hover:text-accent sm:p-2.5"
               >
                 <svg viewBox="0 0 24 24" className="h-3.5 w-3.5 sm:h-4 sm:w-4" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M15 18l-6-6 6-6" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
               </button>
             )}
-            <div ref={cardRef} className="pointer-events-auto w-full max-w-md">
+            <div ref={cardRef} className="w-full max-w-md">
               {cubeTransition && cubeSize ? (
                 // The rounded corners live here, on this static (non-rotating)
                 // clipping wrapper, rather than on each face — a face rounds
@@ -450,7 +465,7 @@ export default function RacketIntro() {
                 type="button"
                 onClick={() => handleArrow(1)}
                 aria-label={t("next")}
-                className="pointer-events-auto shrink-0 rounded-full border border-white/10 bg-surface/95 p-2 font-mono text-foreground backdrop-blur-sm transition-colors hover:border-accent/40 hover:text-accent sm:p-2.5"
+                className="shrink-0 rounded-full border border-white/10 bg-surface/95 p-2 font-mono text-foreground backdrop-blur-sm transition-colors hover:border-accent/40 hover:text-accent sm:p-2.5"
               >
                 <svg viewBox="0 0 24 24" className="h-3.5 w-3.5 sm:h-4 sm:w-4" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M9 6l6 6-6 6" strokeLinecap="round" strokeLinejoin="round" />

@@ -35,8 +35,8 @@ body {
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
 }
 
-/* Hero overlay fade-ins, timed to line up with the particle field's
-   formation (~1.8s) and dispersal (~5.4s) — see TennisBallField.tsx. */
+/* Hero overlay fade-ins — see TennisBallField.tsx for the particle timeline
+   these line up with. */
 @keyframes fade-in-up {
   from {
     opacity: 0;
@@ -48,14 +48,17 @@ body {
   }
 }
 
-.animate-fade-in-1 {
-  animation: fade-in-up 1.2s ease forwards;
-  animation-delay: 1.8s;
-}
-
 .animate-fade-in-2 {
   animation: fade-in-up 1.2s ease forwards;
   animation-delay: 5.4s;
+}
+
+/* Fires just after the ball field's name fully disperses (T_DISPERSE_END =
+   6.4s), so the name card reappears right as the 3D one fades out rather
+   than leaving a gap. */
+.animate-fade-in-3 {
+  animation: fade-in-up 1.2s ease forwards;
+  animation-delay: 6.4s;
 }
 
 /* About section: the heading's fall is driven directly by scroll position

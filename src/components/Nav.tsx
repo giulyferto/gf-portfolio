@@ -2,6 +2,8 @@ import { getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import LocaleSwitcher from "./LocaleSwitcher";
 import MobileNav from "./MobileNav";
+import SectionNavLink from "./SectionNavLink";
+import { ABOUT_SETTLE_FRACTION, PROJECTS_SETTLE_FRACTION } from "@/lib/sectionScroll";
 
 export default async function Nav() {
   const t = await getTranslations("nav");
@@ -13,15 +15,23 @@ export default async function Nav() {
           GF
         </Link>
         <div className="hidden items-center gap-8 sm:flex">
-          <Link href="/#about" className="text-muted transition-colors hover:text-foreground">
+          <SectionNavLink
+            sectionId="about"
+            settleFraction={ABOUT_SETTLE_FRACTION}
+            className="text-muted transition-colors hover:text-foreground"
+          >
             {t("about")}
-          </Link>
-          <Link href="/#projects" className="text-muted transition-colors hover:text-foreground">
+          </SectionNavLink>
+          <SectionNavLink
+            sectionId="projects"
+            settleFraction={PROJECTS_SETTLE_FRACTION}
+            className="text-muted transition-colors hover:text-foreground"
+          >
             {t("projects")}
-          </Link>
-          <Link href="/#contact" className="text-muted transition-colors hover:text-foreground">
+          </SectionNavLink>
+          <SectionNavLink sectionId="contact" className="text-muted transition-colors hover:text-foreground">
             {t("contact")}
-          </Link>
+          </SectionNavLink>
         </div>
         <div className="flex items-center gap-4">
           <LocaleSwitcher />

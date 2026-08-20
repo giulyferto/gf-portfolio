@@ -27,17 +27,20 @@ export default function ProjectCardFace({
 }) {
   return (
     <div
-      // Capped so a longer title/tag list can't balloon the card taller than
-      // its neighbors — that variation is what made the cube-flip transition
-      // (which measures this card's rendered size at the moment it starts)
-      // look inconsistent from one navigation to the next. Deliberately no
-      // min-height: the docked card is anchored to the bottom of the frame
-      // and grows upward, so forcing shorter cards to match the tallest one
-      // pushes their top edge up into the ball/racket sitting above them —
-      // letting the card shrink to its actual content is what keeps that
-      // clearance. overflow-y-auto is the fallback for whatever content
-      // doesn't fit within max-height, rather than clipping it outright.
-      className={`h-full w-full max-h-80 overflow-y-auto border border-white/10 bg-surface/95 p-4 text-center backdrop-blur-sm sm:max-h-96 sm:p-5 ${rounded ? "rounded-2xl" : ""}`}
+      // Fixed, not max — every project's card renders at exactly the same
+      // height instead of shrinking to its own content, so they don't
+      // visibly jump around as the carousel advances (and the cube-flip
+      // transition, which measures this card's rendered size the moment it
+      // starts, always gets the same box regardless of which project it's
+      // animating from/to). The two heights are the tallest any real
+      // project's content actually reaches at that breakpoint (see
+      // RacketIntro.tsx's liftScene comment for why mobile's is exactly the
+      // old max-height ceiling: that's the worst case its -9vh clearance
+      // was already sized around, so pinning every card there — instead of
+      // letting them grow up to it — can't newly overlap the racket above).
+      // overflow-y-auto stays on as a defensive fallback for a future
+      // project whose content is genuinely longer than these fit.
+      className={`h-80 w-full overflow-y-auto border border-white/10 bg-surface/95 p-4 text-center backdrop-blur-sm sm:h-60 sm:p-5 ${rounded ? "rounded-2xl" : ""}`}
     >
       <p className="font-mono text-xs text-muted">
         {String(index + 1).padStart(2, "0")} / {String(total).padStart(2, "0")}

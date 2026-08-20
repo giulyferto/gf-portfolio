@@ -170,4 +170,125 @@ export const projects: Project[] = [
 
     featured: true,
   },
+  {
+    slug: "bulk-wsp-sender",
+
+    title: "Massive WSP Messages",
+
+    summary: {
+      en: "A proof-of-concept WhatsApp bulk messaging tool built on Baileys — not intended for real-world use.",
+      es: "Una prueba de concepto para el envío masivo de mensajes de WhatsApp construida con Baileys — no pensada para uso real.",
+    },
+
+    description: {
+      en: "This is a proof of concept exploring bulk WhatsApp messaging with Next.js, Firebase, and Baileys, an unofficial WhatsApp Web protocol library. Users authenticate, link a WhatsApp account via QR code, manage contact lists in Firestore, and send a message to a list with a delay between sends. The focus was on the architecture: keeping a Baileys socket alive across Next.js hot reloads, storing sessions in Firestore instead of the filesystem, and using SSE to stream the QR code and delivery status in real time.",
+
+      es: "Esta es una prueba de concepto que explora el envío masivo de mensajes de WhatsApp con Next.js, Firebase y Baileys, una librería no oficial del protocolo de WhatsApp Web. Los usuarios se autentican, vinculan una cuenta de WhatsApp mediante código QR, gestionan listas de contactos en Firestore y envían un mensaje a una lista con una demora entre cada envío. El foco estuvo en la arquitectura: mantener vivo un socket de Baileys a través de los hot reloads de Next.js, guardar las sesiones en Firestore en lugar del filesystem, y usar SSE para transmitir el QR y el estado de envío en tiempo real.",
+    },
+
+    techStack: ["Next.js", "Firebase", "Baileys", "TypeScript"],
+
+    year: "2026",
+
+    githubUrl: "https://github.com/giulyferto/bulk-wsp-sender",
+
+    demoUrl: "https://bulk-wsp-be--bulk-wsp-sender.us-east4.hosted.app/",
+
+    media: [
+      {
+        type: "image",
+        src: "/projects/WSP-bulk-sender/Home-Page.png",
+        alt: {
+          en: "Home page of the WhatsApp bulk sender tool",
+          es: "Página principal de la herramienta de envío masivo de WhatsApp",
+        },
+      },
+      {
+        type: "image",
+        src: "/projects/WSP-bulk-sender/Connect-WSP.png",
+        alt: {
+          en: "Linking a WhatsApp account via QR code",
+          es: "Vinculación de una cuenta de WhatsApp mediante código QR",
+        },
+      },
+      {
+        type: "image",
+        src: "/projects/WSP-bulk-sender/Templates.png",
+        alt: {
+          en: "Managing message templates",
+          es: "Gestión de plantillas de mensajes",
+        },
+      },
+      {
+        type: "image",
+        src: "/projects/WSP-bulk-sender/Send-Campaign.png",
+        alt: {
+          en: "Sending a bulk message campaign to a contact list",
+          es: "Envío de una campaña de mensajes masivos a una lista de contactos",
+        },
+      },
+      {
+        type: "image",
+        src: "/projects/WSP-bulk-sender/Campaigns-Sent.png",
+        alt: {
+          en: "History of sent campaigns",
+          es: "Historial de campañas enviadas",
+        },
+      },
+    ],
+
+    featured: false,
+  },
+  {
+    slug: "fun-with-flags",
+
+    title: "Fun With Flags",
+
+    summary: {
+      en: "A nostalgic, GeoCities-styled flag-guessing game — name as many of the world's 249 flags as you can before the 60-second clock runs out.",
+      es: "Un juego nostálgico de adivinar banderas con estética GeoCities: nombra tantas de las 249 banderas del mundo como puedas antes de que se acabe el minuto.",
+    },
+
+    description: {
+      en: "Fun With Flags is a browser-based flag quiz built with React, TypeScript, and Vite, styled after a 90's personal homepage — starfield background, marquee banner, and LCD-style score/timer readouts, done in plain SCSS instead of a UI framework. Each round gives 60 seconds to name as many of the 249 flags (data and artwork from flagcdn.com) as possible, with the best run saved locally as a high score. Fully responsive down to small phones.",
+      es: "Fun With Flags es un quiz de banderas para navegador construido con React, TypeScript y Vite, con una estética de página personal de los 90: fondo de estrellas, banner tipo marquesina y marcadores estilo LCD para el puntaje y el cronómetro, todo hecho con SCSS puro en lugar de un framework de UI. Cada ronda da 60 segundos para acertar tantas de las 249 banderas como sea posible (datos e imágenes de flagcdn.com), guardando el mejor resultado como puntaje máximo local. Totalmente responsivo hasta teléfonos pequeños.",
+    },
+
+    techStack: ["React", "TypeScript", "Vite", "SCSS"],
+
+    year: "2024",
+
+    githubUrl: "https://github.com/giulyferto/fun-with-flags",
+
+    demoUrl: "https://fun-with-flags-orpin.vercel.app/", 
+
+    media: [
+      {
+        type: "image",
+        src: "/projects/Fun-With-Flags/Home-Page.png",
+        alt: {
+          en: "Fun With Flags landing screen with a rainbow GeoCities-style logo, scrolling marquee, and start button",
+          es: "Pantalla de inicio de Fun With Flags con logo arcoíris estilo GeoCities, marquesina animada y botón de inicio",
+        },
+      },
+      {
+        type: "image",
+        src: "/projects/Fun-With-Flags/Game-On.png",
+        alt: {
+          en: "Gameplay screen showing a flag with four country options and the LCD-style score and timer",
+          es: "Pantalla de juego con una bandera, cuatro opciones de país y el puntaje/cronómetro estilo LCD",
+        },
+      },
+      {
+        type: "image",
+        src: "/projects/Fun-With-Flags/Game-Over.png",
+        alt: {
+          en: "Game over screen with the final score and a new high score badge",
+          es: "Pantalla de fin de juego con el puntaje final y una insignia de nuevo puntaje máximo",
+        },
+      },
+    ],
+
+    featured: true,
+  },
 ];

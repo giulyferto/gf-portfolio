@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Link } from "@/i18n/navigation";
+import SectionNavLink from "./SectionNavLink";
+import { ABOUT_SETTLE_FRACTION, PROJECTS_SETTLE_FRACTION } from "@/lib/sectionScroll";
 
 // Nav.tsx hides its horizontal link row below `sm` with nothing standing in
 // for it — below that breakpoint this hamburger toggle is the only way to
@@ -51,15 +52,29 @@ export default function MobileNav({
       {open && (
         <div className="absolute inset-x-0 top-full z-20 border-b border-white/10 bg-background/95 px-6 py-6 backdrop-blur-sm">
           <nav className="flex flex-col gap-5 text-sm">
-            <Link href="/#about" onClick={() => setOpen(false)} className="text-muted transition-colors hover:text-foreground">
+            <SectionNavLink
+              sectionId="about"
+              settleFraction={ABOUT_SETTLE_FRACTION}
+              onNavigate={() => setOpen(false)}
+              className="text-muted transition-colors hover:text-foreground"
+            >
               {aboutLabel}
-            </Link>
-            <Link href="/#projects" onClick={() => setOpen(false)} className="text-muted transition-colors hover:text-foreground">
+            </SectionNavLink>
+            <SectionNavLink
+              sectionId="projects"
+              settleFraction={PROJECTS_SETTLE_FRACTION}
+              onNavigate={() => setOpen(false)}
+              className="text-muted transition-colors hover:text-foreground"
+            >
               {projectsLabel}
-            </Link>
-            <Link href="/#contact" onClick={() => setOpen(false)} className="text-muted transition-colors hover:text-foreground">
+            </SectionNavLink>
+            <SectionNavLink
+              sectionId="contact"
+              onNavigate={() => setOpen(false)}
+              className="text-muted transition-colors hover:text-foreground"
+            >
               {contactLabel}
-            </Link>
+            </SectionNavLink>
           </nav>
         </div>
       )}
