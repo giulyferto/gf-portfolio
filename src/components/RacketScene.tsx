@@ -85,6 +85,7 @@ function Rig({
   onHit,
   hitSignal = 0,
   hitDirection = 1,
+  onRestAnchorRef,
 }: {
   fallProgress: number;
   rotateProgress: number;
@@ -92,6 +93,11 @@ function Rig({
   onHit?: (direction: 1 | -1) => void;
   hitSignal?: number;
   hitDirection?: 1 | -1;
+  // Forwards the DOM node of an invisible marker sitting at the ball's
+  // resting bottom edge, so RacketIntro can measure exactly where that is on
+  // screen (via getBoundingClientRect) and keep the docked card a fixed
+  // pixel distance below it — real projected position, not an estimate.
+  onRestAnchorRef?: (el: HTMLDivElement | null) => void;
 }) {
   // Two nested groups so the two rotations stay independent of each other's
   // axis: the outer one is top-level (parent = scene root), so its rotation
@@ -227,6 +233,20 @@ function Rig({
           </span>
         </Html>
       )}
+      {onRestAnchorRef && (
+        // Unconditional (not gated on ballProgress like the marker above) —
+        // this sits at the ball's fixed *resting* coordinate the whole
+        // time, not its current animated one, so its projected screen
+        // position is knowable as soon as the canvas mounts. Gating it on
+        // ballProgress reaching 1 would mean RacketIntro can't measure the
+        // needed lift until the fall-in animation finishes — which is too
+        // late, since the lift is a transform on the whole scene and needs
+        // to already be correct before the ball visibly arrives, not
+        // snapped into place after.
+        <Html position={[0, -ballRadius, 1]} center style={{ pointerEvents: "none" }}>
+          <div ref={onRestAnchorRef} />
+        </Html>
+      )}
     </>
   );
 }
@@ -238,6 +258,7 @@ export default function RacketScene({
   onHit,
   hitSignal,
   hitDirection,
+  onRestAnchorRef,
 }: {
   fallProgress?: number;
   rotateProgress?: number;
@@ -245,6 +266,7 @@ export default function RacketScene({
   onHit?: (direction: 1 | -1) => void;
   hitSignal?: number;
   hitDirection?: 1 | -1;
+  onRestAnchorRef?: (el: HTMLDivElement | null) => void;
 }) {
   return (
     <Canvas
@@ -264,6 +286,7 @@ export default function RacketScene({
           onHit={onHit}
           hitSignal={hitSignal}
           hitDirection={hitDirection}
+          onRestAnchorRef={onRestAnchorRef}
         />
       </Suspense>
     </Canvas>

@@ -291,4 +291,30 @@ export const projects: Project[] = [
 
     featured: true,
   },
+  {
+    slug: "gf-portfolio",
+
+    title: "My Portfolio",
+
+    summary: {
+      en: "This portfolio — Next.js, Three.js, EN/ES.",
+      es: "Este portfolio — Next.js, Three.js, EN/ES.",
+    },
+
+    description: {
+      en: "The site you're on right now. Next.js, TypeScript, Tailwind, Three.js hero, EN/ES via next-intl.",
+
+      es: "El sitio en el que estás ahora. Next.js, TypeScript, Tailwind, hero en Three.js, EN/ES vía next-intl.",
+    },
+
+    techStack: ["Next.js", "TypeScript", "Three.js", "Tailwind CSS"],
+
+    year: "2026",
+
+    githubUrl: "https://github.com/giulyferto/gf-portfolio",
+
+    media: [],
+
+    featured: false,
+  },
 ];

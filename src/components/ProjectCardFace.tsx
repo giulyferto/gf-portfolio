@@ -46,7 +46,10 @@ export default function ProjectCardFace({
         {String(index + 1).padStart(2, "0")} / {String(total).padStart(2, "0")}
       </p>
       <h3 className="mt-1 font-mono text-sm tracking-widest text-accent">{project.title}</h3>
-      <p className="mt-2 text-sm leading-relaxed text-foreground/85">{project.summary[locale]}</p>
+  
+      <p className="mt-2 line-clamp-3 min-h-[4.875em] text-sm leading-relaxed text-foreground/85">
+        {project.summary[locale]}
+      </p>
       <ul className="mt-3 flex flex-wrap justify-center gap-2">
         {project.techStack.map((tech) => (
           <li

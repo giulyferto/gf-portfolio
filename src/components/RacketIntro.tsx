@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { TransitionEvent } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import RacketCanvas from "./RacketCanvas";
@@ -41,6 +41,9 @@ const VIEW_H = 1050;
 // space, so a portrait screen isn't paying its width budget for a wall of
 // black sky it'll barely show any of anyway.
 const NARROW_VIEW_TOP = 320;
+// Fixed pixel gap kept between the ball/racket's resting bottom edge and the
+// top of the docked card, at any screen size.
+const LIFT_GAP_PX = 20;
 
 
 
@@ -71,11 +74,22 @@ export default function RacketIntro() {
   // clutter on any smaller window, landscape or not, so it's hidden by
   // width alone rather than aspect ratio.
   const [hideTruss, setHideTruss] = useState(false);
-  // On very small screens the docked card's title/summary can wrap onto
-  // several lines, growing tall enough to overlap the ball/racket sitting
-  // above it — lifting the whole 3D scene up gives the card room to grow
-  // into without the two fighting for the same vertical space.
-  const [liftScene, setLiftScene] = useState(false);
+  // The docked card has a fixed pixel height (which itself changes at the sm
+  // breakpoint — see ProjectCardFace's h-80/h-60 split), while the
+  // ball/racket's resting spot is wherever the fixed camera happens to
+  // project it — no single lift amount fits every combination of viewport
+  // width and height. RacketScene renders an invisible marker at the ball's
+  // true resting bottom edge (see onRestAnchorRef below) and forwards its
+  // DOM node here via anchorRef, so the gap to the card is measured from its
+  // real projected screen position rather than estimated.
+  // Applied imperatively (not via React state) — see recomputeLift below
+  // for why: multiple triggers (mount, ResizeObserver's own initial fire,
+  // the retry burst) can land in the same React batch, and reading "the
+  // lift currently applied" back from a state variable in that situation
+  // races the DOM read against a commit that hasn't happened yet.
+  const sceneRef = useRef<HTMLDivElement>(null);
+  const anchorRef = useRef<HTMLDivElement | null>(null);
+  const appliedLiftRef = useRef(0);
   const [displayIndex, setDisplayIndex] = useState(0);
   const [isModalOpen, setIsModalOpen] = useState(false);
   // Bumped to fire the racket/ball swing from outside the 3D scene (the
@@ -149,12 +163,84 @@ export default function RacketIntro() {
     const update = () => {
       setViewTop(window.innerWidth / window.innerHeight < 1 ? NARROW_VIEW_TOP : 0);
       setHideTruss(window.innerWidth < 1400);
-      setLiftScene(window.innerWidth < 400);
     };
     update();
     window.addEventListener("resize", update);
     return () => window.removeEventListener("resize", update);
   }, []);
+
+  // Reads the anchor marker's real projected screen position (see
+  // onRestAnchorRef below) rather than estimating it, so this stays correct
+  // at any screen size without a calibrated constant to get wrong. Applies
+  // the result directly to the DOM rather than through React state:
+  // recomputeLift can legitimately fire more than once within the same
+  // React batch (mount, ResizeObserver's own initial fire, and the retry
+  // burst below can all land together), and anchorRect/cardRect are real
+  // synchronous DOM reads that won't reflect a state update that hasn't
+  // committed yet. Recovering "the lift already applied" from appliedLiftRef
+  // — a plain ref mutated in lockstep with the actual style write, not
+  // React state — keeps the two perfectly in sync no matter how many times
+  // this runs back to back, instead of compounding a stale measurement on
+  // top of an already-advanced value.
+  const recomputeLift = useCallback(() => {
+    const anchor = anchorRef.current;
+    const card = cardRef.current;
+    const scene = sceneRef.current;
+    if (!anchor || !card || !scene) return;
+    const anchorRect = anchor.getBoundingClientRect();
+    const cardRect = card.getBoundingClientRect();
+    const trueAnchorTop = anchorRect.top + appliedLiftRef.current;
+    const needed = Math.max(0, Math.round(trueAnchorTop + LIFT_GAP_PX - cardRect.top));
+    if (needed === appliedLiftRef.current) return;
+    appliedLiftRef.current = needed;
+    scene.style.transform = needed ? `translateY(-${needed}px)` : "";
+  }, []);
+
+  // A short retry burst, rather than a single read: drei's Html positions
+  // the anchor inside R3F's own render loop rather than React's commit, so
+  // it can still be mid-transition for a frame or two right after it
+  // mounts. recomputeLift is cheap to call repeatedly since React bails out
+  // of re-rendering when it lands on the same value twice.
+  const burstRecomputeLift = useCallback(() => {
+    let raf = 0;
+    let frame = 0;
+    const tick = () => {
+      recomputeLift();
+      frame += 1;
+      if (frame < 15) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [recomputeLift]);
+
+  // The racket's GLTF model loads async under Suspense (see RacketScene),
+  // so the anchor doesn't exist in the DOM at mount — only once that
+  // resolves. Triggering the burst from *this* ref callback, rather than a
+  // plain useEffect keyed on mount, means it fires at whatever moment the
+  // anchor actually appears instead of racing a fixed-length window against
+  // an unpredictable async load. Stabilized with useCallback so React
+  // doesn't call it with null-then-new-element on every re-render (the
+  // usual inline-arrow-ref footgun) — it should only fire on real
+  // mount/unmount, not each time RacketIntro re-renders from scroll.
+  const handleAnchorRef = useCallback(
+    (el: HTMLDivElement | null) => {
+      anchorRef.current = el;
+      if (el) burstRecomputeLift();
+    },
+    [burstRecomputeLift],
+  );
+
+  useEffect(() => {
+    recomputeLift();
+    const card = cardRef.current;
+    const ro = card ? new ResizeObserver(recomputeLift) : null;
+    if (card) ro?.observe(card);
+    window.addEventListener("resize", recomputeLift);
+    return () => {
+      ro?.disconnect();
+      window.removeEventListener("resize", recomputeLift);
+    };
+  }, [recomputeLift]);
 
   useEffect(() => {
     const wrapper = wrapperRef.current;
@@ -346,7 +432,7 @@ export default function RacketIntro() {
           </g>
         </svg>
 
-        <div className="absolute inset-0" style={liftScene ? { transform: "translateY(-9vh)" } : undefined}>
+        <div ref={sceneRef} className="absolute inset-0">
           <RacketCanvas
             fallProgress={fallProgress}
             rotateProgress={rotateProgress}
@@ -354,6 +440,7 @@ export default function RacketIntro() {
             onHit={handleHit}
             hitSignal={hitSignal}
             hitDirection={hitDirection}
+            onRestAnchorRef={handleAnchorRef}
           />
         </div>
 

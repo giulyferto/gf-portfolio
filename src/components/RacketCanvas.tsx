@@ -14,6 +14,7 @@ export default function RacketCanvas({
   onHit,
   hitSignal,
   hitDirection,
+  onRestAnchorRef,
 }: {
   fallProgress?: number;
   rotateProgress?: number;
@@ -21,6 +22,7 @@ export default function RacketCanvas({
   onHit?: (direction: 1 | -1) => void;
   hitSignal?: number;
   hitDirection?: 1 | -1;
+  onRestAnchorRef?: (el: HTMLDivElement | null) => void;
 }) {
   return (
     <RacketScene
@@ -30,6 +32,7 @@ export default function RacketCanvas({
       onHit={onHit}
       hitSignal={hitSignal}
       hitDirection={hitDirection}
+      onRestAnchorRef={onRestAnchorRef}
     />
   );
 }

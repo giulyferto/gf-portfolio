@@ -6,7 +6,7 @@
 // pinned scroll budget (0-1) that reveal happens; omit it (or pass 0) for
 // sections that aren't scroll-jacked, e.g. Contact, which reveals via
 // IntersectionObserver as soon as it enters the viewport.
-export function scrollToSection(id: string, settleFraction = 0) {
+export function scrollToSection(id: string, settleFraction = 0, instant = false) {
   const el = document.getElementById(id);
   if (!el) return false;
 
@@ -16,7 +16,7 @@ export function scrollToSection(id: string, settleFraction = 0) {
 
   window.scrollTo({
     top: Math.max(0, target),
-    behavior: reduceMotion ? "auto" : "smooth",
+    behavior: instant || reduceMotion ? "auto" : "smooth",
   });
   return true;
 }
@@ -31,3 +31,13 @@ export const ABOUT_SETTLE_FRACTION = 0.52;
 // cap it applies to the ball-drop phase — the point where the ball has
 // landed and the project card is showing, plus the same rounding buffer.
 export const PROJECTS_SETTLE_FRACTION = 2 / 3 + 0.65 * (1 / 3) + 0.02;
+
+// sectionId -> settle fraction, shared between SectionNavLink (in-app nav
+// clicks) and the initial-load hash handling in HashSectionSettle. Sections
+// missing here (e.g. Contact, which reveals via IntersectionObserver rather
+// than being scroll-jacked) settle at fraction 0 — the untouched top of the
+// section is already its "revealed" state.
+export const SETTLE_FRACTIONS: Record<string, number> = {
+  about: ABOUT_SETTLE_FRACTION,
+  projects: PROJECTS_SETTLE_FRACTION,
+};
