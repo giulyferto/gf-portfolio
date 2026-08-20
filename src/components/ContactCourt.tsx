@@ -14,7 +14,15 @@ import { RESUME_URL, LINKEDIN_URL, GITHUB_URL, EMAIL, CALENDLY_URL } from "@/lib
 // its label once it comes to rest, mirroring the "Click me" prompt over
 // the RacketScene ball.
 
-export default function ContactCourt({ heading, body }: { heading: string; body: string }) {
+export default function ContactCourt({
+  heading,
+  body,
+  thankYou,
+}: {
+  heading: string;
+  body: string;
+  thankYou: string;
+}) {
   const t = useTranslations("contact");
   const sectionRef = useRef<HTMLElement>(null);
   const [reduceMotion, setReduceMotion] = useState(false);
@@ -62,7 +70,7 @@ export default function ContactCourt({ heading, body }: { heading: string; body:
       ref={sectionRef}
       className="relative flex h-screen min-h-[640px] w-full flex-col items-center overflow-hidden bg-background"
     >
-      <ContactCanvas started={started} reduceMotion={reduceMotion} links={links} />
+      <ContactCanvas started={started} reduceMotion={reduceMotion} links={links} thankYou={thankYou} />
 
       <div className="pointer-events-none relative z-10 mx-auto max-w-2xl px-6 pt-[10vh] text-center">
         <h2 className="font-mono text-sm uppercase tracking-widest text-accent">{heading}</h2>

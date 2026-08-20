@@ -12,10 +12,12 @@ export default function ContactCanvas({
   started,
   reduceMotion,
   links,
+  thankYou,
 }: {
   started: boolean;
   reduceMotion: boolean;
   links: ContactLink[];
+  thankYou: string;
 }) {
-  return <BouncingBalls started={started} reduceMotion={reduceMotion} links={links} />;
+  return <BouncingBalls started={started} reduceMotion={reduceMotion} links={links} thankYou={thankYou} />;
 }

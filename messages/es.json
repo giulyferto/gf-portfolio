@@ -12,7 +12,7 @@
   },
   "hero": {
     "eyebrow": "Ingeniera de Software",
-    "tagline": "Construyo productos de punta a punta — desde backends distribuidos hasta los píxeles que la gente realmente toca.",
+    "tagline": "Construyo aplicaciones de punta a punta, transformando ideas en productos reales.",
     "experience": "{years}+ años de experiencia",
     "cta": "Ver mi trabajo"
   },
@@ -38,7 +38,8 @@
   },
   "contact": {
     "heading": "Contactame",
-    "body": "Dejá que las pelotas se asienten y hacé clic en una para contactarme.",
+    "body": "giulianafertonani@gmail.com",
+    "thankYou": "Muchas gracias!",
     "links": {
       "resume": "CV",
       "linkedin": "LinkedIn",

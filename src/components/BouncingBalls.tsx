@@ -87,6 +87,24 @@ function drawSvgMark(viewBoxSize: number, paths: SvgPathSpec[]) {
   };
 }
 
+// Same "stamped like brand printing" treatment as the link balls' logo
+// marks (drawSvgMark above), but plain text — two lines rather than one so
+// it reads as a roughly square mark instead of a long thin strip running
+// off the edge of the panel.
+function drawTextMark(lines: string[]) {
+  return (ctx: CanvasRenderingContext2D, size: number) => {
+    ctx.save();
+    ctx.fillStyle = MARK_INK;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.font = `700 ${size * 0.16}px ui-monospace, "Geist Mono", SFMono-Regular, Menlo, monospace`;
+    const lineHeight = size * 0.2;
+    const startY = size / 2 - (lineHeight * (lines.length - 1)) / 2;
+    lines.forEach((line, i) => ctx.fillText(line, size / 2, startY + i * lineHeight));
+    ctx.restore();
+  };
+}
+
 const BALL_MARKS: Record<string, (ctx: CanvasRenderingContext2D, size: number) => void> = {
   // viewBox 0 0 512 512, 3 fill paths (head, body, document outline).
   resume: drawSvgMark(512, [
@@ -289,18 +307,29 @@ const Ball = forwardRef<
 
 // Seconds of Y-axis rotation per second once BigBall is on screen — purely
 // decorative, unrelated to the small balls' per-ball yaw (that one faces a
-// fixed icon at the camera; this one has no icon and just keeps spinning).
-const BIG_BALL_SPIN = 0.6;
+// fixed icon at the camera; this one just keeps spinning, so its "Thank
+// you" mark drifts in and out of view rather than staying camera-facing).
+const BIG_BALL_SPIN = -0.6;
 
 // A centerpiece ball that drops in and bounces once the small link balls
 // have finished settling, then keeps spinning in place — reuses the same
 // physics as the small balls (just bigger, centered, and un-clickable) so
 // it reads as part of the same "court", not a bolted-on effect.
-const BigBall = forwardRef<Steppable, { started: boolean; reduceMotion: boolean }>(function BigBall(
-  { started, reduceMotion },
-  ref,
-) {
-  const texture = useMemo(() => makeTennisBallTexture(), []);
+const BigBall = forwardRef<
+  Steppable,
+  { started: boolean; reduceMotion: boolean; thankYou: string }
+>(function BigBall({ started, reduceMotion, thankYou }, ref) {
+  // u: 0.75 is the point directly opposite the ball's front (u: 0.25 is
+  // what faces the camera on an unrotated mesh — see the markU comment in
+  // tennisBallTexture.ts), so the mark sits on the exact far side rather
+  // than merely off to one edge — hidden at rest, rotating fully into view
+  // partway through each spin. Split on spaces rather than a hardcoded
+  // two-line array so a translated string (e.g. "Muchas gracias!") wraps
+  // the same way without another caller-side change.
+  const texture = useMemo(
+    () => makeTennisBallTexture(drawTextMark(thankYou.split(" ")), { u: 0.45, v: 0.5 }),
+    [thankYou],
+  );
   const meshRef = useRef<THREE.Mesh>(null!);
   const { viewport } = useThree();
 
@@ -364,7 +393,17 @@ const BigBall = forwardRef<Steppable, { started: boolean; reduceMotion: boolean 
   );
 });
 
-function Scene({ links, started, reduceMotion }: { links: ContactLink[]; started: boolean; reduceMotion: boolean }) {
+function Scene({
+  links,
+  started,
+  reduceMotion,
+  thankYou,
+}: {
+  links: ContactLink[];
+  started: boolean;
+  reduceMotion: boolean;
+  thankYou: string;
+}) {
   const ballRefs = useRef<(Steppable | null)[]>([]);
   const bigBallRef = useRef<Steppable | null>(null);
 
@@ -394,7 +433,7 @@ function Scene({ links, started, reduceMotion }: { links: ContactLink[]; started
           reduceMotion={reduceMotion}
         />
       ))}
-      <BigBall ref={bigBallRef} started={started} reduceMotion={reduceMotion} />
+      <BigBall ref={bigBallRef} started={started} reduceMotion={reduceMotion} thankYou={thankYou} />
     </>
   );
 }
@@ -403,10 +442,12 @@ export default function BouncingBalls({
   started,
   reduceMotion,
   links,
+  thankYou,
 }: {
   started: boolean;
   reduceMotion: boolean;
   links: ContactLink[];
+  thankYou: string;
 }) {
   return (
     <Canvas
@@ -414,7 +455,7 @@ export default function BouncingBalls({
       gl={{ antialias: true, alpha: true }}
       className="!absolute inset-0"
     >
-      <Scene links={links} started={started} reduceMotion={reduceMotion} />
+      <Scene links={links} started={started} reduceMotion={reduceMotion} thankYou={thankYou} />
     </Canvas>
   );
 }

@@ -7,7 +7,10 @@ import * as THREE from "three";
 // seam-tangent fix below) only needs to happen in one place. `drawMark`, if
 // given, is called last so a caller (BouncingBalls) can stamp a logo-style
 // mark centered on the felt, the way real balls carry brand printing.
-export function makeTennisBallTexture(drawMark?: (ctx: CanvasRenderingContext2D, size: number) => void) {
+export function makeTennisBallTexture(
+  drawMark?: (ctx: CanvasRenderingContext2D, size: number) => void,
+  markPosition?: { u?: number; v?: number; scale?: number },
+) {
   const size = 256;
   const canvas = document.createElement("canvas");
   canvas.width = size;
@@ -42,32 +45,20 @@ export function makeTennisBallTexture(drawMark?: (ctx: CanvasRenderingContext2D,
   ctx.bezierCurveTo(size * 0.04, size * 0.82, size * 0.96, size * 0.82, size * 0.96, size * 0.5);
   ctx.stroke();
   if (drawMark) {
-    // SphereGeometry's default UV unwrap puts u=0.5 (canvas-center, where a
-    // caller naturally draws) on the sphere's local -X side, not +Z — the
-    // caller (BouncingBalls) yaws each ball's mesh per-ball so local +Z
-    // faces the camera horizontally, and per that same UV unwrap +Z is
-    // u=0.25, so shifting the mark there is what lands it facing forward.
-    // The yaw is deliberately horizontal-only (no pitch — see BouncingBalls
-    // for why), which leaves a small constant vertical miss since the balls
-    // sit below the camera's forward line: markV nudges the mark toward the
-    // near pole to compensate. 0.478 isn't eyeballed — it's the zero-offset
-    // point from measuring rendered ink-centroid vs. ball-centroid pixel
-    // offsets across several markV values and interpolating (eyeballing
-    // previous passes kept being thrown off by lighting/shading making the
-    // mark look off-center when it geometrically wasn't). Also shrink the
-    // mark around that same center point — a caller's mark is authored to
-    // roughly fill the canvas, but on the ball it should read as a small
-    // printed logo, not cover the whole panel.
-    const markScale = 0.5;
-    const markU = 0.25;
-    const markV = 0.478;
-    ctx.save();
-    ctx.translate(size * (markU - 0.5), size * (markV - 0.5));
-    ctx.translate(size / 2, size / 2);
-    ctx.scale(markScale, markScale);
-    ctx.translate(-size / 2, -size / 2);
-    drawMark(ctx, size);
-    ctx.restore();
+    
+    const markScale = markPosition?.scale ?? 0.5;
+    const markU = markPosition?.u ?? 0.25;
+    const markV = markPosition?.v ?? 0.478;
+    
+    for (const dx of [-size, 0, size]) {
+      ctx.save();
+      ctx.translate(size * (markU - 0.5) + dx, size * (markV - 0.5));
+      ctx.translate(size / 2, size / 2);
+      ctx.scale(markScale, markScale);
+      ctx.translate(-size / 2, -size / 2);
+      drawMark(ctx, size);
+      ctx.restore();
+    }
   }
   const tex = new THREE.CanvasTexture(canvas);
   tex.anisotropy = 4;

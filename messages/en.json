@@ -14,7 +14,7 @@
 
   "hero": {
     "eyebrow": "Software Engineer",
-    "tagline": "I build products end-to-end — from distributed backends to the pixels people actually touch.",
+    "tagline": "I build end-to-end applications, turning ideas into real products.",
     "experience": "{years}+ years of experience",
     "cta": "View my work"
   },
@@ -44,7 +44,8 @@
 
   "contact": {
     "heading": "Get in touch",
-    "body": "Let the balls settle, then click one to reach me.",
+    "body": "giulianafertonani@gmail.com",
+    "thankYou": "Thank you!",
     "links": {
       "resume": "Resume",
       "linkedin": "LinkedIn",
