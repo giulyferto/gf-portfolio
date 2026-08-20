@@ -26,11 +26,15 @@
     "heading": "Selected work",
     "github": "Code",
     "live": "Live",
+    "demo": "Watch demo",
     "private": "Private repo",
     "seeMore": "See more",
     "close": "Close",
     "previous": "Previous project",
-    "next": "Next project"
+    "next": "Next project",
+    "previousImage": "Previous image",
+    "nextImage": "Next image",
+    "expandImage": "Expand image"
   },
 
   "contact": {

@@ -22,11 +22,15 @@
     "heading": "Trabajos seleccionados",
     "github": "Código",
     "live": "En vivo",
+    "demo": "Ver demo",
     "private": "Repo privado",
     "seeMore": "Ver más",
     "close": "Cerrar",
     "previous": "Proyecto anterior",
-    "next": "Próximo proyecto"
+    "next": "Próximo proyecto",
+    "previousImage": "Imagen anterior",
+    "nextImage": "Imagen siguiente",
+    "expandImage": "Ampliar imagen"
   },
   "contact": {
     "heading": "Contactame",
