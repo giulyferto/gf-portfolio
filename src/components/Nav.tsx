@@ -13,11 +13,11 @@ export default async function Nav() {
           GF
         </Link>
         <div className="hidden items-center gap-8 sm:flex">
-          <Link href="/#projects" className="text-muted transition-colors hover:text-foreground">
-            {t("projects")}
-          </Link>
           <Link href="/#about" className="text-muted transition-colors hover:text-foreground">
             {t("about")}
+          </Link>
+          <Link href="/#projects" className="text-muted transition-colors hover:text-foreground">
+            {t("projects")}
           </Link>
           <Link href="/#contact" className="text-muted transition-colors hover:text-foreground">
             {t("contact")}

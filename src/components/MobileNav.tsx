@@ -51,11 +51,11 @@ export default function MobileNav({
       {open && (
         <div className="absolute inset-x-0 top-full z-20 border-b border-white/10 bg-background/95 px-6 py-6 backdrop-blur-sm">
           <nav className="flex flex-col gap-5 text-sm">
-            <Link href="/#projects" onClick={() => setOpen(false)} className="text-muted transition-colors hover:text-foreground">
-              {projectsLabel}
-            </Link>
             <Link href="/#about" onClick={() => setOpen(false)} className="text-muted transition-colors hover:text-foreground">
               {aboutLabel}
+            </Link>
+            <Link href="/#projects" onClick={() => setOpen(false)} className="text-muted transition-colors hover:text-foreground">
+              {projectsLabel}
             </Link>
             <Link href="/#contact" onClick={() => setOpen(false)} className="text-muted transition-colors hover:text-foreground">
               {contactLabel}

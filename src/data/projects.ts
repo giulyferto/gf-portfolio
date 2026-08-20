@@ -37,24 +37,40 @@ export interface Project {
 // from ever running past a single digit.
 export const projects: Project[] = [
   {
-    slug: "example-project",
-    title: "Example Project",
+    slug: "metafit",
+
+    title: "MetaFit",
+
     role: {
-      en: "Full-stack engineer",
-      es: "Ingeniera full-stack",
+      en: "Full-stack mobile engineer",
+      es: "Ingeniera full-stack mobile",
     },
+
     summary: {
-      en: "A one or two sentence hook — what it is and why it mattered.",
-      es: "Un gancho de una o dos oraciones — qué es y por qué importó.",
+      en: "An AI-powered nutrition tracker that turns food photos into detailed macronutrient estimates and personalized feedback.",
+      es: "Una app de seguimiento nutricional con IA que convierte fotos de comida en estimaciones detalladas de macronutrientes y feedback personalizado.",
     },
+
     description: {
-      en: "The full case-study copy goes here: the problem, your role, key decisions, and the outcome.",
-      es: "Acá va el copy completo del caso de estudio: el problema, tu rol, decisiones clave y el resultado.",
+      en: "MetaFit is a React Native / Expo app for tracking meals through four input methods: food photos, barcode scanning, nutrition-label photos, or manual entry. Meals are analyzed to produce an instant macronutrient breakdown, while AI-generated feedback adapts to the user's profile and eating patterns. The application uses TypeScript, Expo Router, and Firebase Auth, Firestore, and Storage on the mobile side, with Firebase Cloud Functions powering the backend. GPT-4o handles image and nutrition-label analysis, while GPT-4o-mini generates personalized feedback and analyzes patterns across date ranges. Barcode lookups use Open Food Facts, and meal history can be exported to PDF. One of the main engineering challenges was prompt design: producing structured, consistent, and well-calibrated nutrition estimates from inherently ambiguous food images. AI calls are handled server-side through Firebase Cloud Functions, with API credentials secured using Firebase Secret Manager.",
+
+      es: "MetaFit es una app en React Native / Expo para registrar comidas mediante cuatro métodos: fotos de comida, escaneo de códigos de barras, fotos de etiquetas nutricionales o carga manual. Las comidas se analizan para generar un desglose instantáneo de macronutrientes, mientras que la IA adapta el feedback al perfil y los patrones alimentarios del usuario. La aplicación utiliza TypeScript, Expo Router y Firebase Auth, Firestore y Storage en el cliente mobile, con Firebase Cloud Functions como backend. GPT-4o se encarga del análisis de imágenes y etiquetas nutricionales, mientras que GPT-4o-mini genera feedback personalizado y analiza patrones a lo largo de distintos períodos. Las búsquedas por código de barras utilizan Open Food Facts y el historial de comidas puede exportarse a PDF. Uno de los principales desafíos de ingeniería fue el diseño de prompts: conseguir estimaciones nutricionales estructuradas, consistentes y bien calibradas a partir de imágenes de comida, que por naturaleza contienen información ambigua. Las llamadas a la IA se realizan desde Firebase Cloud Functions y las credenciales de la API se mantienen protegidas mediante Firebase Secret Manager.",
     },
-    techStack: ["Next.js", "TypeScript", "PostgreSQL"],
-    year: "2024",
-    githubUrl: "https://github.com/your-handle/example-project",
+
+    techStack: [
+      "React Native",
+      "Expo",
+      "TypeScript",
+      "Firebase",
+      "OpenAI GPT-4o",
+    ],
+
+    year: "2025",
+
+    githubUrl: "https://github.com/giulyferto/TFG-MetaFit",
+
     media: [],
+
     featured: true,
   },
   {

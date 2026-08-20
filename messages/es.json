@@ -28,8 +28,15 @@
     "previous": "Proyecto anterior",
     "next": "Próximo proyecto"
   },
-  "footer": {
+  "contact": {
     "heading": "Contactame",
-    "body": "TODO — agregá acá tu método de contacto preferido (email, LinkedIn, etc.)."
+    "body": "Dejá que las pelotas se asienten y hacé clic en una para contactarme.",
+    "links": {
+      "resume": "CV",
+      "linkedin": "LinkedIn",
+      "github": "GitHub",
+      "email": "Email",
+      "calendly": "Agendar una llamada"
+    }
   }
 }
